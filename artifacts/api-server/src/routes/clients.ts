@@ -48,13 +48,14 @@ router.get("/clients/:id", requireRole("manager"), async (req, res) => {
 });
 
 router.patch("/clients/:id", requireRole("manager"), async (req, res) => {
+  const { id: _id, ...data } = req.body;
   const [client] = await db
     .update(clientsTable)
-    .set(req.body)
+    .set(data)
     .where(eq(clientsTable.id, req.params.id))
     .returning();
   if (!client) return res.status(404).json({ error: "Not found" });
-  await logAudit("client", req.params.id, "update", req.body, req);
+  await logAudit("client", req.params.id, "update", data, req);
   return res.json({ ...client, totalJobs: 0, totalValue: 0 });
 });
 

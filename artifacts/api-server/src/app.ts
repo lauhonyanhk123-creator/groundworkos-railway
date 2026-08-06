@@ -41,8 +41,12 @@ if (!clerkStandalone) {
   app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 }
 
-app.use(cors({ credentials: true, origin: true }));
-
+/**
+* When APP_URL is set (production self-host), only that origin may make
+* credentialed cross-origin requests. Left unset (local dev), the request
+* origin is reflected so local tooling on any port keeps working.
+*/
+app.use(cors({ credentials: true, origin: process.env.APP_URL ?? true }));
 /**
  * Body parsers, but skip the storage upload relay (PUT
  * /api/storage/uploads/direct/:id) so its raw body streams untouched to object
