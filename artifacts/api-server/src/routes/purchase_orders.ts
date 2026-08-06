@@ -43,7 +43,7 @@ router.post("/purchase-orders", requireRole("manager"), async (req, res) => {
 });
 
 router.patch("/purchase-orders/:id", requireRole("manager"), async (req, res) => {
-  const { poNumber: _po, jobNumber: _jn, jobTitle: _jt, ...data } = req.body;
+  const { id: _id, poNumber: _po, jobNumber: _jn, jobTitle: _jt, ...data } = req.body;
   if (data.amount !== undefined || data.vatAmount !== undefined) {
     const amount = Number(data.amount ?? 0);
     const vatAmount = Number(data.vatAmount ?? Math.round(amount * 0.2 * 100) / 100);
