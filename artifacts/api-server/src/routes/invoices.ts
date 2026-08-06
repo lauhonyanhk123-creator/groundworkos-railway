@@ -45,13 +45,13 @@ async function computeFinancials(data: Record<string, any>) {
   return { ...data, subtotal, vatAmount, totalAmount, cisDeduction };
 }
 
-router.get("/invoices", async (req, res) => {
+router.get("/invoices", requireRole("manager"), async (req, res) => {
   const invoices = await db.select().from(invoicesTable).orderBy(invoicesTable.createdAt);
   const enriched = await Promise.all(invoices.map(enrichInvoice));
   res.json(enriched);
 });
 
-router.post("/invoices", async (req, res) => {
+router.post("/invoices", requireRole("manager"), async (req, res) => {
   // Strip fields the client must not control directly: `id`/`invoiceNumber`
   // are server-generated, and `clientName`/`jobTitle` are enrichment-only
   // (joined in from other tables, never stored on the invoice itself).
@@ -70,13 +70,13 @@ router.post("/invoices", async (req, res) => {
   res.status(201).json(await enrichInvoice(inv));
 });
 
-router.get("/invoices/:id", async (req, res) => {
+router.get("/invoices/:id", requireRole("manager"), async (req, res) => {
   const [inv] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, req.params.id));
   if (!inv) return res.status(404).json({ error: "Not found" });
   return res.json(await enrichInvoice(inv));
 });
 
-router.patch("/invoices/:id", async (req, res) => {
+router.patch("/invoices/:id", requireRole("manager"), async (req, res) => {
   // Same stripping rationale as the POST handler above.
   const { clientName: _cn, jobTitle: _jt, vatAmount: _va, totalAmount: _ta, cisDeduction: _cd, ...rest } = req.body;
   let data: Record<string, any> = rest;

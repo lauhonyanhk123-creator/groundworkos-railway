@@ -26,13 +26,13 @@ function computeTotalsFromLineItems(lineItems: Array<{ quantity?: number; unitPr
   return { subtotal, vatAmount, totalAmount };
 }
 
-router.get("/quotes", async (req, res) => {
+router.get("/quotes", requireRole("manager"), async (req, res) => {
   const quotes = await db.select().from(quotesTable).orderBy(quotesTable.createdAt);
   const enriched = await Promise.all(quotes.map(enrichQuote));
   res.json(enriched);
 });
 
-router.post("/quotes", async (req, res) => {
+router.post("/quotes", requireRole("manager"), async (req, res) => {
   const { lineItems, clientName: _cn, id: _id, quoteNumber: _qn, subtotal: _st, vatAmount: _va, totalAmount: _ta, ...data } = req.body;
   const totals = lineItems?.length ? computeTotalsFromLineItems(lineItems) : { subtotal: 0, vatAmount: 0, totalAmount: 0 };
   const { generateId, nextSeqNumber } = await import("../lib/generateId.js");
@@ -58,13 +58,13 @@ router.post("/quotes", async (req, res) => {
   res.status(201).json(await enrichQuote(quote));
 });
 
-router.get("/quotes/:id", async (req, res) => {
+router.get("/quotes/:id", requireRole("manager"), async (req, res) => {
   const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, req.params.id));
   if (!quote) return res.status(404).json({ error: "Not found" });
   return res.json(await enrichQuote(quote));
 });
 
-router.patch("/quotes/:id", async (req, res) => {
+router.patch("/quotes/:id", requireRole("manager"), async (req, res) => {
   const { lineItems, clientName: _cn, subtotal: _st, vatAmount: _va, totalAmount: _ta, ...data } = req.body;
   const { generateId } = await import("../lib/generateId.js");
   const totals = lineItems !== undefined

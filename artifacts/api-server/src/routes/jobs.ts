@@ -13,7 +13,7 @@ async function withClient(job: typeof jobsTable.$inferSelect) {
   return { ...job, clientName: client?.companyName ?? null };
 }
 
-router.get("/jobs", async (req, res) => {
+router.get("/jobs", requireRole("manager"), async (req, res) => {
   const jobs = await db.select().from(jobsTable).orderBy(jobsTable.createdAt);
   const clientIds = [...new Set(jobs.map((j) => j.clientId).filter(Boolean))] as string[];
   const clients = clientIds.length
@@ -23,7 +23,7 @@ router.get("/jobs", async (req, res) => {
   res.json(jobs.map((j) => ({ ...j, clientName: clientMap.get(j.clientId ?? "") ?? null })));
 });
 
-router.post("/jobs", async (req, res) => {
+router.post("/jobs", requireRole("manager"), async (req, res) => {
   const { clientName: _cn, id: _id, jobNumber: _jn, ...data } = req.body;
   const { generateId, nextSeqNumber } = await import("../lib/generateId.js");
   const id = generateId();
@@ -33,13 +33,13 @@ router.post("/jobs", async (req, res) => {
   res.status(201).json(await withClient(job));
 });
 
-router.get("/jobs/:id", async (req, res) => {
+router.get("/jobs/:id", requireRole("manager"), async (req, res) => {
   const [job] = await db.select().from(jobsTable).where(eq(jobsTable.id, req.params.id));
   if (!job) return res.status(404).json({ error: "Not found" });
   return res.json(await withClient(job));
 });
 
-router.patch("/jobs/:id", async (req, res) => {
+router.patch("/jobs/:id", requireRole("manager"), async (req, res) => {
   const { clientName: _cn, ...data } = req.body;
   const [job] = await db.update(jobsTable).set(data).where(eq(jobsTable.id, req.params.id)).returning();
   if (!job) return res.status(404).json({ error: "Not found" });
