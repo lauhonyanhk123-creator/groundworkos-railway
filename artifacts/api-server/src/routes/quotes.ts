@@ -65,7 +65,7 @@ router.get("/quotes/:id", requireRole("manager"), async (req, res) => {
 });
 
 router.patch("/quotes/:id", requireRole("manager"), async (req, res) => {
-  const { lineItems, clientName: _cn, subtotal: _st, vatAmount: _va, totalAmount: _ta, ...data } = req.body;
+    const { lineItems, clientName: _cn, id: _id, quoteNumber: _qn, subtotal: _st, vatAmount: _va, totalAmount: _ta, ...data } = req.body;
   const { generateId } = await import("../lib/generateId.js");
   const totals = lineItems !== undefined
     ? (lineItems.length ? computeTotalsFromLineItems(lineItems) : { subtotal: 0, vatAmount: 0, totalAmount: 0 })
