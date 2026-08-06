@@ -78,7 +78,7 @@ router.get("/invoices/:id", requireRole("manager"), async (req, res) => {
 
 router.patch("/invoices/:id", requireRole("manager"), async (req, res) => {
   // Same stripping rationale as the POST handler above.
-    const { clientName: _cn, jobTitle: _jt, id: _id, invoiceNumber: _in, vatAmount: _va, totalAmount: _ta, cisDeduction: _cd, ...rest } = req.body;
+  const { clientName: _cn, jobTitle: _jt, id: _id, invoiceNumber: _in, vatAmount: _va, totalAmount: _ta, cisDeduction: _cd, ...rest } = req.body;
   let data: Record<string, any> = rest;
   // Only recompute VAT/total/CIS if something that affects them changed;
   // otherwise this is a partial update (e.g. just `status`) and we leave the
