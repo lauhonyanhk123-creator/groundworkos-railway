@@ -1,8 +1,0 @@
-uploads = []
-generated = []
-
-[[outputs]]
-id = "dzhZ-wGRtPDxVEIbaDhEe"
-uri = "file://screenshots/01-dashboard.jpg"
-type = "image"
-title = "GroundworkOS — Landing Page"

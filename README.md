@@ -171,6 +171,24 @@ GroundworkOS is built around UK Construction Industry Scheme requirements:
 
 ---
 
+## Architecture & Development Notes
+
+A few non-obvious design decisions and gotchas worth knowing before making changes:
+
+**Roles & access control** — Roles live in Clerk `publicMetadata.role` and are read independently on the frontend (`hooks/useRole.ts`) and backend (`lib/auth.ts`, `admin.ts`); any change to role logic must be applied in all places at once, since a mismatch between frontend and backend checks has been a real bug source. A user with no role set defaults to admin — a deliberate choice for a trusted, single-company deployment, not an oversight. Any endpoint gated to admin (e.g. the audit trail) must have every consumer of that endpoint gated too, not just the page that owns it — the dashboard's "Recent Activity" panel reads the same audit endpoint as the full Audit Log page.
+
+**API data shape** — The database and API layer use camelCase (Drizzle convention), while the frontend's `types.ts` uses snake_case throughout. The bridge between them lives in `artifacts/groundworkos/src/lib/apiTransforms.ts`, called from `artifacts/groundworkos/src/store/DataLoader.tsx`. Any new field added to the schema needs a matching entry in the transform layer or it won't reach the frontend.
+
+**Data integrity rule** — Never persist a client-supplied id as a database primary key on create/edit endpoints; generate ids server-side instead. A shared default-form object that baked in a single client-generated id at module load time once caused every *second* record of a given type to silently fail to save (a primary-key collision on the second insert). Client-side temporary ids should only ever be used as React keys, never sent to the database as the row's identity.
+
+**UI loading state** — Pages read from a shared app-wide store that starts empty; a single loading gate in the main layout (driven by the core list queries: clients/jobs/quotes/invoices) blocks rendering until the first load completes, so no page can flash a false "no results" state. If a new top-level dataset becomes something a page depends on for its first paint, add it to that gate's condition.
+
+**TypeScript route typing** — Any Express middleware factory meant to sit in front of a typed route handler (e.g. a role-check middleware) should be generic over the route's param/body/query types (`RequestHandler<P, ResBody, ReqBody, ReqQuery>`), not hardcoded to the base `Request`/`Response` types — otherwise TypeScript silently widens `req.params` for every handler in that route's chain.
+
+**Design tokens** — The UI's "Technical Survey" theme (warm concrete background, Survey Blue `#1b5e78` accent, Space Grotesk/Inter/JetBrains Mono type) is defined as CSS variables in `index.css`. Reuse those tokens for new UI work rather than hardcoding new colors.
+
+---
+
 ## License
 
 Private — not open source. All rights reserved.

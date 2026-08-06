@@ -513,3 +513,28 @@ sudo systemctl reload nginx                          # (frontend is static — n
 ```bash
 sudo journalctl -u groundworkos-api -f
 ```
+
+
+---
+
+## Why self-hosting works this way (technical notes)
+
+These explain the reasoning behind a few choices above, for anyone maintaining the app going forward.
+
+**Storage backend** — Set via `STORAGE_DRIVER=s3`, implemented as a facade so the whole storage layer swaps with an environment variable and no code changes. Because Oracle Cloud Object Storage doesn't support CORS, uploads can't go straight from the browser to a presigned URL the way they would with plain S3; instead every upload and download is relayed through the API server itself, so the browser only ever talks to your own domain.
+
+**Clerk standalone mode** — Two settings have to agree or logins will silently break: `CLERK_STANDALONE=true` on the API server, and leaving `VITE_CLERK_PROXY_URL` unset when building the frontend. Both are needed to fully detach from Replit's built-in Clerk proxy; setting only one produces confusing auth failures rather than a clear error.
+
+**Frontend environment variables are baked in at build time, not read at runtime** — Any `VITE_*` variable (including the Clerk publishable key) is compiled into the frontend when you run its build step. If you need to change one, rebuild the frontend; restarting the API server alone will not pick up the change.
+
+**Database migrations that need a TTY** — `pnpm --filter @workspace/db run push` can fail with an "Interactive prompts require a TTY terminal" error for destructive schema changes (e.g. adding a UNIQUE constraint to a table that already has rows). If that happens, connect with `psql` and apply the change directly, using a partial unique index to avoid conflicts with existing NULL rows, for example:
+
+```sql
+ALTER TABLE quotes ADD COLUMN IF NOT EXISTS share_token text;
+CREATE UNIQUE INDEX IF NOT EXISTS quotes_share_token_unique
+  ON quotes(share_token) WHERE share_token IS NOT NULL;
+```
+
+**Running one-off scripts on the server** — The api-server package has no `tsx` binary, so a one-off TypeScript script (e.g. a database seed script under `artifacts/api-server/src/`) needs to be bundled with esbuild before running with plain `node`, rather than executed directly as TypeScript.
+
+**Nginx specifics recap** — `client_max_body_size` must be raised to allow large document uploads, `proxy_request_buffering off` lets uploads stream through rather than buffering to disk first, and the `proxy_pass` target should not have a trailing slash so the `/api` prefix is preserved correctly.
