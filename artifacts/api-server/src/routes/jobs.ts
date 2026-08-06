@@ -40,7 +40,7 @@ router.get("/jobs/:id", requireRole("manager"), async (req, res) => {
 });
 
 router.patch("/jobs/:id", requireRole("manager"), async (req, res) => {
-  const { clientName: _cn, ...data } = req.body;
+  const { id: _id, jobNumber: _jn, clientName: _cn, ...data } = req.body;
   const [job] = await db.update(jobsTable).set(data).where(eq(jobsTable.id, req.params.id)).returning();
   if (!job) return res.status(404).json({ error: "Not found" });
   await logAudit("job", req.params.id, "update", data, req);
