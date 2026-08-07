@@ -94,11 +94,11 @@ Each accounting integration is optional and independent — set only the credent
 # Install all dependencies
 pnpm install
 
-# Run database migrations
-pnpm --filter @workspace/db run migrate
+# Push the database schema (Drizzle)
+pnpm --filter @workspace/db run push
 
-# Start development (all services)
-pnpm run dev
+# Start development (frontend + API, in parallel)
+pnpm -r --parallel run dev
 ```
 
 The frontend runs on port `5173` (or `$PORT` in production), the API server on `3001`.
@@ -111,10 +111,13 @@ The frontend runs on port `5173` (or `$PORT` in production), the API server on `
 /
 ├── artifacts/
 │   ├── groundworkos/        # React + Vite frontend
-│   └── api-server/          # Express API server
+│   ├── api-server/          # Express API server
+│   └── mockup-sandbox/      # UI mockup/design preview sandbox (not part of the deployed app)
 ├── lib/
 │   ├── db/                  # Drizzle schema + migrations
 │   ├── api-client-react/    # Typed API client (shared)
+│   ├── api-spec/            # OpenAPI spec + codegen (orval)
+│   ├── api-zod/             # Shared Zod schemas/types
 │   └── object-storage-web/  # File upload utilities
 └── pnpm-workspace.yaml
 ```
