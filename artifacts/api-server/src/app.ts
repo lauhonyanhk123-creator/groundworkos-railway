@@ -1,4 +1,5 @@
 import express, { type Express, type RequestHandler } from "express";
+import path from "path";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
@@ -80,5 +81,28 @@ app.use(
 );
 
 app.use("/api", router);
+
+/**
+ * Optional single-service static hosting - set STATIC_DIR to the built
+  * frontend's output directory (e.g. artifacts/groundworkos/dist/public) to
+   * have this server serve the SPA itself, alongside the API. This is what
+    * makes a single-service deploy (e.g. on Railway) possible without a
+     * separate reverse proxy like the Nginx setup used for self-hosting.
+      * Leave STATIC_DIR unset to keep previous behavior (API only) unchanged.
+       */
+const staticDir = process.env.STATIC_DIR;
+
+if (staticDir) {
+  const resolvedStaticDir = path.resolve(staticDir);
+
+  app.use(express.static(resolvedStaticDir));
+
+  app.use((req, res, next) => {
+    if (req.method !== "GET" || req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.join(resolvedStaticDir, "index.html"));
+  });
+}
 
 export default app;
