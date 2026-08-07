@@ -26,13 +26,13 @@ async function enrichEntry(entry: typeof scheduleEntriesTable.$inferSelect) {
   };
 }
 
-router.get("/schedule", requireRole("manager"), async (req, res) => {
+router.get("/schedule", requireRole("foreman"), async (req, res) => {
   const entries = await db.select().from(scheduleEntriesTable).orderBy(scheduleEntriesTable.startDatetime);
   const enriched = await Promise.all(entries.map(enrichEntry));
   res.json(enriched);
 });
 
-router.post("/schedule", requireRole("manager"), async (req, res) => {
+router.post("/schedule", requireRole("foreman"), async (req, res) => {
   const { jobNumber: _jn, jobTitle: _jt, clientName: _cn, id: _id, ...data } = req.body;
   const { generateId } = await import("../lib/generateId.js");
   const id = generateId();
@@ -41,7 +41,7 @@ router.post("/schedule", requireRole("manager"), async (req, res) => {
   res.status(201).json(await enrichEntry(entry));
 });
 
-router.patch("/schedule/:id", requireRole("manager"), async (req, res) => {
+router.patch("/schedule/:id", requireRole("foreman"), async (req, res) => {
   const { jobNumber: _jn, jobTitle: _jt, clientName: _cn, ...data } = req.body;
   const [entry] = await db.update(scheduleEntriesTable).set(data).where(eq(scheduleEntriesTable.id, req.params.id)).returning();
   if (!entry) return res.status(404).json({ error: "Not found" });
