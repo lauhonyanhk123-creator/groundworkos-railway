@@ -149,14 +149,11 @@ Roles are stored in Clerk `publicMetadata.role`. Set via the **Settings → User
 
 ## Deployment
 
-See the **Deploy Guide** page in the app (`/deploy`, admin only) for a full step-by-step guide covering:
+GroundworkOS is deployed on [Railway](https://railway.app) as a single service — the Express API server serves the built frontend directly (via `STATIC_DIR`), so no separate static host or reverse proxy is required.
 
-- Oracle Cloud ARM A1 server setup
-- PostgreSQL configuration
-- Nginx reverse proxy + Let's Encrypt SSL
-- PM2 process management
-- Environment variable setup
-- Zero-downtime redeployment script
+See **[RAILWAY.md](./RAILWAY.md)** for the full step-by-step guide, covering the Railway project and PostgreSQL plugin setup, required environment variables (Clerk, database, object storage, app URL), the build and start commands already configured via `railway.json`, running database migrations with the Railway CLI, first login and setting the admin role, and custom domains and troubleshooting.
+
+For self-hosting outside Railway (e.g. a VPS), see the in-app Deploy Guide (`/deploy`, admin only), which covers an Oracle Cloud + Nginx + PM2 setup instead.
 
 ---
 
