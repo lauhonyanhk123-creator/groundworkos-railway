@@ -19,12 +19,6 @@ export const subcontractorsTable = pgTable("subcontractors", {
   address: text("address"),
   notes: text("notes"),
   active: boolean("active").notNull().default(true),
-  // GroundworkOS Network: links this local record to a shared, subcontractor-owned
-  // identity (see artifacts/network-api) so the same groundworker's verified CIS
-  // status, insurance and certifications can be trusted by other contractors too.
-  networkProfileId: text("network_profile_id"),
-  networkStatus: text("network_status").notNull().default("none"),
-  networkInviteToken: text("network_invite_token").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
