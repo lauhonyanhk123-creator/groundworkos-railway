@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
-import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
 import { Toaster } from "sonner";
 import { Briefcase, Receipt, ShieldCheck, HardHat, Truck, FolderOpen } from "lucide-react";
@@ -35,18 +34,7 @@ import { useApp } from "./store/AppContext";
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
-
-// With the Replit Clerk proxy (VITE_CLERK_PROXY_URL set), derive the publishable
-// key from the current host so it matches the proxied FAPI. For a standalone
-// (external) Clerk account — no proxy — use the publishable key directly, since
-// publishableKeyFromHost rebuilds a bogus FAPI host from the hostname for a live key.
-const clerkPubKey = clerkProxyUrl
-  ? publishableKeyFromHost(
-      window.location.hostname,
-      import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-    )
-  : import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 function stripBase(path: string): string {
   return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || "/" : path;
