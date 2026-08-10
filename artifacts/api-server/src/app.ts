@@ -1,4 +1,4 @@
-import express, { type Express, type RequestHandler } from "express";
+import express, { type Express, type RequestHandler, type ErrorRequestHandler } from "express";
 import path from "path";
 import cors from "cors";
 import pinoHttp from "pino-http";
@@ -75,5 +75,40 @@ if (staticDir) {
         res.sendFile(path.join(resolvedStaticDir, "index.html"));
   });
 }
+
+/**
+* Final error-handling middleware. Registered last (Express identifies it as
+* an error handler by its 4-argument signature) so it catches errors from
+* every route and middleware mounted above. Logs via the request-scoped
+* pino logger attached by pino-http (falling back to the base logger) and
+* always responds with a consistent JSON error shape instead of Express's
+* default HTML error page.
+*/
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+    if (res.headersSent) {
+        return next(err);
+    }
+    
+    const status =
+        typeof err?.status === "number"
+        ? err.status
+        : typeof err?.statusCode === "number"
+        ? err.statusCode
+        : 500;
+    
+    (req.log ?? logger).error(
+        { err, status, method: req.method, url: req.originalUrl },
+        "Unhandled request error",
+        );
+    
+    res.status(status).json({
+        error: {
+            message: status === 500 ? "Internal server error" : (err?.message ?? "Request failed"),
+            status,
+        },
+    });
+};
+
+app.use(errorHandler);
 
 export default app;
