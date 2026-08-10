@@ -2,19 +2,20 @@ import { Router } from "express";
 import { db, scheduleEntriesTable, jobsTable, clientsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireRole } from "../lib/auth.js";
+import { CreateScheduleInput, UpdateScheduleInput } from "@workspace/api-zod";
 import { logAudit } from "./audit.js";
 
 const router = Router();
 
 async function enrichEntry(entry: typeof scheduleEntriesTable.$inferSelect) {
   const [job] = entry.jobId
-    ? await db
-        .select({ jobNumber: jobsTable.jobNumber, title: jobsTable.title, clientId: jobsTable.clientId })
-        .from(jobsTable)
-        .where(eq(jobsTable.id, entry.jobId))
+  ? await db
+    .select({ jobNumber: jobsTable.jobNumber, title: jobsTable.title, clientId: jobsTable.clientId })
+    .from(jobsTable)
+    .where(eq(jobsTable.id, entry.jobId))
     : [null];
   const [client] = job?.clientId
-    ? await db.select({ companyName: clientsTable.companyName }).from(clientsTable).where(eq(clientsTable.id, job.clientId))
+  ? await db.select({ companyName: clientsTable.companyName }).from(clientsTable).where(eq(clientsTable.id, job.clientId))
     : [null];
   return {
     ...entry,
@@ -33,7 +34,11 @@ router.get("/schedule", requireRole("foreman"), async (req, res) => {
 });
 
 router.post("/schedule", requireRole("foreman"), async (req, res) => {
-  const { jobNumber: _jn, jobTitle: _jt, clientName: _cn, id: _id, ...data } = req.body;
+  const parsed = CreateScheduleInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+  }
+  const data = parsed.data;
   const { generateId } = await import("../lib/generateId.js");
   const id = generateId();
   const [entry] = await db.insert(scheduleEntriesTable).values({ id, ...data }).returning();
@@ -42,7 +47,11 @@ router.post("/schedule", requireRole("foreman"), async (req, res) => {
 });
 
 router.patch("/schedule/:id", requireRole("foreman"), async (req, res) => {
-  const { jobNumber: _jn, jobTitle: _jt, clientName: _cn, ...data } = req.body;
+  const parsed = UpdateScheduleInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+  }
+  const data = parsed.data;
   const [entry] = await db.update(scheduleEntriesTable).set(data).where(eq(scheduleEntriesTable.id, req.params.id)).returning();
   if (!entry) return res.status(404).json({ error: "Not found" });
   await logAudit("schedule_entry", req.params.id, "update", data, req);

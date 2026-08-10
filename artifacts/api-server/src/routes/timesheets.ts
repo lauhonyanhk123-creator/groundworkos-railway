@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { db, timesheetsTable, jobsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
+import { CreateTimesheetInput, UpdateTimesheetInput } from "@workspace/api-zod";
 import { logAudit } from "./audit.js";
 
 const router = Router();
@@ -9,7 +10,7 @@ router.get("/timesheets", async (req, res) => {
   const rows = await db.select().from(timesheetsTable).orderBy(desc(timesheetsTable.workDate), desc(timesheetsTable.createdAt));
   const jobIds = [...new Set(rows.map((r) => r.jobId).filter(Boolean))] as string[];
   const jobs = jobIds.length
-    ? await db.select({ id: jobsTable.id, jobNumber: jobsTable.jobNumber, title: jobsTable.title }).from(jobsTable)
+  ? await db.select({ id: jobsTable.id, jobNumber: jobsTable.jobNumber, title: jobsTable.title }).from(jobsTable)
     : [];
   const jobMap = new Map(jobs.map((j) => [j.id, j]));
   res.json(rows.map((r) => ({
@@ -20,7 +21,11 @@ router.get("/timesheets", async (req, res) => {
 });
 
 router.post("/timesheets", async (req, res) => {
-  const { id: _id, jobNumber: _jn, jobTitle: _jt, ...data } = req.body;
+  const parsed = CreateTimesheetInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+  }
+  const data = parsed.data;
   const { generateId } = await import("../lib/generateId.js");
   const id = generateId();
   const hoursWorked = Number(data.hoursWorked ?? 8);
@@ -32,7 +37,11 @@ router.post("/timesheets", async (req, res) => {
 });
 
 router.patch("/timesheets/:id", async (req, res) => {
-  const { jobNumber: _jn, jobTitle: _jt, ...data } = req.body;
+  const parsed = UpdateTimesheetInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+  }
+  const data = parsed.data;
   const hoursWorked = data.hoursWorked != null ? Number(data.hoursWorked) : undefined;
   const dayRate = data.dayRate != null ? Number(data.dayRate) : undefined;
   const updates: any = { ...data };
