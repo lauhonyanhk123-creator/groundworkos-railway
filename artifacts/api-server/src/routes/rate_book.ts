@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, rateBookTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireRole } from "../lib/auth.js";
+import { CreateRateBookInput, UpdateRateBookInput } from "@workspace/api-zod";
 import { logAudit } from "./audit.js";
 
 const router = Router();
@@ -12,15 +13,27 @@ router.get("/rate-book", requireRole("manager"), async (req, res) => {
 });
 
 router.post("/rate-book", requireRole("manager"), async (req, res) => {
-  const [entry] = await db.insert(rateBookTable).values(req.body).returning();
+  const parsed = CreateRateBookInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+  }
+  const data = parsed.data;
+  const { generateId } = await import("../lib/generateId.js");
+  const id = generateId();
+  const [entry] = await db.insert(rateBookTable).values({ id, ...data }).returning();
   await logAudit("rate_book", entry.id, "create", { description: entry.description }, req);
   res.status(201).json(entry);
 });
 
 router.patch("/rate-book/:id", requireRole("manager"), async (req, res) => {
-  const [entry] = await db.update(rateBookTable).set(req.body).where(eq(rateBookTable.id, req.params.id)).returning();
+  const parsed = UpdateRateBookInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+  }
+  const data = parsed.data;
+  const [entry] = await db.update(rateBookTable).set(data).where(eq(rateBookTable.id, req.params.id)).returning();
   if (!entry) return res.status(404).json({ error: "Not found" });
-  await logAudit("rate_book", req.params.id, "update", req.body, req);
+  await logAudit("rate_book", req.params.id, "update", data, req);
   return res.json(entry);
 });
 
