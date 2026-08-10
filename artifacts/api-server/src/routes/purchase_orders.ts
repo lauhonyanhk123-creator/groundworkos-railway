@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, purchaseOrdersTable, jobsTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
 import { requireRole } from "../lib/auth.js";
+import { CreatePurchaseOrderInput, UpdatePurchaseOrderInput } from "@workspace/api-zod";
 import { logAudit } from "./audit.js";
 
 const router = Router();
@@ -9,9 +10,9 @@ const router = Router();
 async function withJob(row: typeof purchaseOrdersTable.$inferSelect) {
   if (!row.jobId) return { ...row, jobNumber: null, jobTitle: null };
   const [job] = await db
-    .select({ jobNumber: jobsTable.jobNumber, title: jobsTable.title })
-    .from(jobsTable)
-    .where(eq(jobsTable.id, row.jobId));
+  .select({ jobNumber: jobsTable.jobNumber, title: jobsTable.title })
+  .from(jobsTable)
+  .where(eq(jobsTable.id, row.jobId));
   return { ...row, jobNumber: job?.jobNumber ?? null, jobTitle: job?.title ?? null };
 }
 
@@ -19,7 +20,7 @@ router.get("/purchase-orders", requireRole("manager"), async (req, res) => {
   const rows = await db.select().from(purchaseOrdersTable).orderBy(desc(purchaseOrdersTable.orderDate), desc(purchaseOrdersTable.createdAt));
   const jobIds = [...new Set(rows.map(r => r.jobId).filter(Boolean))] as string[];
   const jobs = jobIds.length
-    ? await db.select({ id: jobsTable.id, jobNumber: jobsTable.jobNumber, title: jobsTable.title }).from(jobsTable)
+  ? await db.select({ id: jobsTable.id, jobNumber: jobsTable.jobNumber, title: jobsTable.title }).from(jobsTable)
     : [];
   const jobMap = new Map(jobs.map(j => [j.id, j]));
   res.json(rows.map(r => ({
@@ -30,7 +31,11 @@ router.get("/purchase-orders", requireRole("manager"), async (req, res) => {
 });
 
 router.post("/purchase-orders", requireRole("manager"), async (req, res) => {
-  const { id: _id, poNumber: _po, jobNumber: _jn, jobTitle: _jt, ...data } = req.body;
+  const parsed = CreatePurchaseOrderInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+  }
+  const data = parsed.data;
   const { generateId, nextSeqNumber } = await import("../lib/generateId.js");
   const id = generateId();
   const poNumber = await nextSeqNumber("purchase_orders", "PO");
@@ -43,10 +48,14 @@ router.post("/purchase-orders", requireRole("manager"), async (req, res) => {
 });
 
 router.patch("/purchase-orders/:id", requireRole("manager"), async (req, res) => {
-  const { id: _id, poNumber: _po, jobNumber: _jn, jobTitle: _jt, ...data } = req.body;
-  if (data.amount !== undefined || data.vatAmount !== undefined) {
-    const amount = Number(data.amount ?? 0);
-    const vatAmount = Number(data.vatAmount ?? Math.round(amount * 0.2 * 100) / 100);
+  const parsed = UpdatePurchaseOrderInput.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
+  }
+  const data: Record<string, unknown> = { ...parsed.data };
+  if (parsed.data.amount !== undefined || parsed.data.vatAmount !== undefined) {
+    const amount = Number(parsed.data.amount ?? 0);
+    const vatAmount = Number(parsed.data.vatAmount ?? Math.round(amount * 0.2 * 100) / 100);
     data.amount = amount;
     data.vatAmount = vatAmount;
     data.totalAmount = amount + vatAmount;
