@@ -347,3 +347,12 @@ export const CompanySettingsInput = z.object({
   taxYearStart: z.string().optional(),
   filingReminderDays: z.string().optional(),
 }).strict();
+
+
+// The portal approve endpoint is public and unauthenticated (reached via a
+// shared quote link, not a logged-in session), so its body must be
+// validated the same way as every other mutating route even though no
+// requireRole check runs in front of it.
+export const PortalApproveInput = z.object({
+  name: z.string().trim().min(1, "Name is required to approve"),
+}).strict();
