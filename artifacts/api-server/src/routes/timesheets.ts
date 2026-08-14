@@ -33,7 +33,7 @@ router.post("/timesheets", async (req, res) => {
   const cost = dayRate != null ? Math.round(((hoursWorked / 8) * dayRate) * 100) / 100 : null;
   const [row] = await db.insert(timesheetsTable).values({ id, ...data, hoursWorked, dayRate, cost }).returning();
   await logAudit("timesheet", id, "create", { jobId: data.jobId, workDate: data.workDate }, req);
-  res.status(201).json({ ...row, jobNumber: null, jobTitle: null });
+  return res.status(201).json({ ...row, jobNumber: null, jobTitle: null });
 });
 
 router.patch("/timesheets/:id", async (req, res) => {

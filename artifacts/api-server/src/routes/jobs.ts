@@ -35,7 +35,7 @@ router.post("/jobs", requireRole("foreman"), async (req, res) => {
     const jobNumber = await nextSeqNumber("jobs", "GW");
     const [job] = await db.insert(jobsTable).values({ id, jobNumber, ...data }).returning();
     await logAudit("job", id, "create", { title: data.title, status: data.status }, req);
-    res.status(201).json(await withClient(job));
+    return res.status(201).json(await withClient(job));
 });
 
 router.get("/jobs/:id", requireRole("foreman"), async (req, res) => {

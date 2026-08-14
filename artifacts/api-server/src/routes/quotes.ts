@@ -60,7 +60,7 @@ router.post("/quotes", requireRole("manager"), async (req, res) => {
               });
 
               await logAudit("quote", id, "create", { quoteNumber: quote.quoteNumber, status: data.status }, req);
-    res.status(201).json(await enrichQuote(quote));
+    return res.status(201).json(await enrichQuote(quote));
 });
 
 router.get("/quotes/:id", requireRole("manager"), async (req, res) => {
@@ -74,14 +74,22 @@ router.patch("/quotes/:id", requireRole("manager"), async (req, res) => {
     if (!parsed.success) {
           return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
     }
-    const { lineItems, ...data } = parsed.data;
+    const { lineItems, sentAt, ...data } = parsed.data;
     const { generateId } = await import("../lib/generateId.js");
     const totals = lineItems !== undefined
       ? (lineItems.length ? computeTotalsFromLineItems(lineItems) : { subtotal: 0, vatAmount: 0, totalAmount: 0 })
           : {};
 
                const quote = await db.transaction(async (tx) => {
-                     const [updated] = await tx.update(quotesTable).set({ ...data, ...totals }).where(eq(quotesTable.id, req.params.id)).returning();
+                     const [updated] = await tx
+                       .update(quotesTable)
+                       .set({
+                         ...data,
+                         ...totals,
+                         ...(sentAt !== undefined && { sentAt: new Date(sentAt) }),
+                       })
+                       .where(eq(quotesTable.id, req.params.id))
+                       .returning();
                      if (!updated) return null;
                      if (lineItems !== undefined) {
                              await tx.delete(lineItemsTable).where(eq(lineItemsTable.quoteId, updated.id));

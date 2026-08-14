@@ -36,7 +36,7 @@ router.post("/documents", requireRole("manager"), async (req, res) => {
   .values({ id, ...data, status })
   .returning();
   await logAudit("document", id, "create", { name: data.name, type: data.type }, req);
-  res.status(201).json(doc);
+  return res.status(201).json(doc);
 });
 
 router.patch("/documents/:id", requireRole("manager"), async (req, res) => {
