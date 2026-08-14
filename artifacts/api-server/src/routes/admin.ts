@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { clerkClient } from "@clerk/express";
+import { isRole, isUnsetOrAdmin, hasExplicitNonAdminRole } from "@workspace/shared-role";
 
 const router = Router();
 
-// ─── Shared helpers ─────────────────────────────────────────────────────────
+// --- Shared helpers ---
 
 /** Reads the authenticated Clerk user id off the request, or null if signed out. */
 function getUserId(req: any): string | null {
@@ -21,14 +22,11 @@ function getUserId(req: any): string | null {
  * "no admin exists" in normal operation (default-admins never carry the
  * explicit string), which would wrongly re-open the self-promotion bootstrap
  * flow to demoted managers/foremen. Bootstrap should only unlock in a genuine
- * lockout — i.e. every user has been explicitly demoted to manager/foreman.
+ * lockout - i.e. every user has been explicitly demoted to manager/foreman.
  */
 export async function adminExists(): Promise<boolean> {
   const response = await clerkClient.users.getUserList({ limit: 500 });
-  return response.data.some((u) => {
-    const role = u.publicMetadata?.role as string | undefined;
-    return role === undefined || role === "admin";
-  });
+  return response.data.some((u) => isUnsetOrAdmin(u.publicMetadata?.role));
 }
 
 /**
@@ -44,16 +42,16 @@ async function requireAdmin(req: any, res: any): Promise<boolean> {
   }
   const user = await clerkClient.users.getUser(userId);
   // Users with no explicit role default to admin; only an explicitly-set
-  // non-admin role is rejected here.
-  const claimedRole = user.publicMetadata?.role as string | undefined;
-  if (claimedRole && claimedRole !== "admin") {
+// non-admin role is rejected here.
+const claimedRole = user.publicMetadata?.role as string | undefined;
+  if (hasExplicitNonAdminRole(claimedRole)) {
     res.status(403).json({ error: "Forbidden: admin role required" });
     return false;
   }
   return true;
 }
 
-// ─── User management (admin only) ──────────────────────────────────────────
+// --- User management (admin only) ---
 
 router.get("/admin/users", async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
@@ -71,14 +69,14 @@ router.get("/admin/users", async (req, res) => {
     }));
     res.json(users);
   } catch (err: any) {
-    res.status(500).json({ error: err.message ?? "Failed to fetch users" });
+res.status(500).json({ error: err.message ?? "Failed to fetch users" });
   }
 });
 
 router.patch("/admin/users/:id/role", async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
   const { role } = req.body;
-  if (!["admin", "manager", "foreman"].includes(role)) {
+  if (!isRole(role)) {
     return res.status(400).json({ error: "Invalid role" });
   }
   try {
@@ -87,14 +85,14 @@ router.patch("/admin/users/:id/role", async (req, res) => {
     });
     return res.json({ ok: true });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message ?? "Failed to update role" });
+return res.status(500).json({ error: err.message ?? "Failed to update role" });
   }
 });
 
-// ─── First-time admin bootstrap ─────────────────────────────────────────────
+// --- First-time admin bootstrap ---
 //
 // A brand-new deployment starts with zero admins, so the "admin only" guard
-// above would lock everyone out of user management forever — nobody could
+// above would lock everyone out of user management forever - nobody could
 // ever grant the first admin role. These two endpoints solve that one-time
 // bootstrap problem: any signed-in user may check whether an admin exists
 // yet, and may promote *themselves* to admin, but only while the workspace
@@ -108,7 +106,7 @@ router.get("/admin/bootstrap-status", async (req, res) => {
   try {
     return res.json({ adminExists: await adminExists() });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message ?? "Failed to check admin status" });
+return res.status(500).json({ error: err.message ?? "Failed to check admin status" });
   }
 });
 
@@ -120,15 +118,15 @@ router.post("/admin/bootstrap", async (req, res) => {
   try {
     if (await adminExists()) {
       return res
-        .status(409)
-        .json({ error: "An admin already exists. Ask them to promote you from Settings > Users." });
+      .status(409)
+      .json({ error: "An admin already exists. Ask them to promote you from Settings > Users." });
     }
     await clerkClient.users.updateUserMetadata(userId, {
       publicMetadata: { role: "admin" },
     });
     return res.json({ ok: true });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message ?? "Failed to bootstrap admin" });
+return res.status(500).json({ error: err.message ?? "Failed to bootstrap admin" });
   }
 });
 

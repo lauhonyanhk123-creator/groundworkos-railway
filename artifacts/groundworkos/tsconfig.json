@@ -18,6 +18,9 @@
   },
   "references": [
     {
+      "path": "../../lib/shared-role"
+    },
+    {
       "path": "../../lib/api-client-react"
     },
     {
