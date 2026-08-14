@@ -42,7 +42,7 @@ router.post("/subcontractors", requireRole("manager"), async (req, res) => {
   const id = generateId();
   const [sub] = await db.insert(subcontractorsTable).values({ id, ...data }).returning();
   await logAudit("subcontractor", id, "create", { companyName: data.companyName }, req);
-  res.status(201).json(sub);
+  return res.status(201).json(sub);
 });
 
 router.get("/subcontractors/:id", requireRole("manager"), async (req, res) => {

@@ -30,7 +30,7 @@ router.post("/plant", requireRole("manager"), async (req, res) => {
   const id = generateId();
   const [item] = await db.insert(plantTable).values({ id, ...data }).returning();
   await logAudit("plant", id, "create", { name: data.name }, req);
-  res.status(201).json(await enrichPlant(item));
+  return res.status(201).json(await enrichPlant(item));
 });
 
 router.patch("/plant/:id", requireRole("manager"), async (req, res) => {

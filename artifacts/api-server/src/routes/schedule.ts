@@ -41,9 +41,12 @@ router.post("/schedule", requireRole("foreman"), async (req, res) => {
   const data = parsed.data;
   const { generateId } = await import("../lib/generateId.js");
   const id = generateId();
-  const [entry] = await db.insert(scheduleEntriesTable).values({ id, ...data }).returning();
+  const [entry] = await db
+    .insert(scheduleEntriesTable)
+    .values({ id, ...data, startDatetime: new Date(data.startDatetime), endDatetime: new Date(data.endDatetime) })
+    .returning();
   await logAudit("schedule_entry", id, "create", { jobId: data.jobId, title: data.title }, req);
-  res.status(201).json(await enrichEntry(entry));
+  return res.status(201).json(await enrichEntry(entry));
 });
 
 router.patch("/schedule/:id", requireRole("foreman"), async (req, res) => {
@@ -51,10 +54,18 @@ router.patch("/schedule/:id", requireRole("foreman"), async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: "Invalid request body", details: parsed.error.flatten() });
   }
-  const data = parsed.data;
-  const [entry] = await db.update(scheduleEntriesTable).set(data).where(eq(scheduleEntriesTable.id, req.params.id)).returning();
+  const { startDatetime, endDatetime, ...data } = parsed.data;
+  const [entry] = await db
+    .update(scheduleEntriesTable)
+    .set({
+      ...data,
+      ...(startDatetime !== undefined && { startDatetime: new Date(startDatetime) }),
+      ...(endDatetime !== undefined && { endDatetime: new Date(endDatetime) }),
+    })
+    .where(eq(scheduleEntriesTable.id, req.params.id))
+    .returning();
   if (!entry) return res.status(404).json({ error: "Not found" });
-  await logAudit("schedule_entry", req.params.id, "update", data, req);
+  await logAudit("schedule_entry", req.params.id, "update", parsed.data, req);
   return res.json(await enrichEntry(entry));
 });
 

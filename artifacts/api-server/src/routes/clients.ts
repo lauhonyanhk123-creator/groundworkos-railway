@@ -36,7 +36,7 @@ router.post("/clients", requireRole("manager"), async (req, res) => {
     const id = generateId();
     const [client] = await db.insert(clientsTable).values({ id, ...data }).returning();
     await logAudit("client", id, "create", { companyName: data.companyName }, req);
-    res.status(201).json({ ...client, totalJobs: 0, totalValue: 0 });
+    return res.status(201).json({ ...client, totalJobs: 0, totalValue: 0 });
 });
 
 router.get("/clients/:id", requireRole("manager"), async (req, res) => {

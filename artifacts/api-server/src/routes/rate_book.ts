@@ -22,7 +22,7 @@ router.post("/rate-book", requireRole("manager"), async (req, res) => {
   const id = generateId();
   const [entry] = await db.insert(rateBookTable).values({ id, ...data }).returning();
   await logAudit("rate_book", entry.id, "create", { description: entry.description }, req);
-  res.status(201).json(entry);
+  return res.status(201).json(entry);
 });
 
 router.patch("/rate-book/:id", requireRole("manager"), async (req, res) => {

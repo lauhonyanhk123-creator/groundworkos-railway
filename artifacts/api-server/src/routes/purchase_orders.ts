@@ -44,7 +44,7 @@ router.post("/purchase-orders", requireRole("manager"), async (req, res) => {
   const totalAmount = Number(data.totalAmount ?? amount + vatAmount);
   const [row] = await db.insert(purchaseOrdersTable).values({ id, poNumber, ...data, amount, vatAmount, totalAmount }).returning();
   await logAudit("purchase_order", id, "create", { poNumber, supplier: data.supplier }, req);
-  res.status(201).json(await withJob(row));
+  return res.status(201).json(await withJob(row));
 });
 
 router.patch("/purchase-orders/:id", requireRole("manager"), async (req, res) => {

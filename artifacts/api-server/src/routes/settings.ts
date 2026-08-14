@@ -44,10 +44,10 @@ router.put("/settings/company", async (req, res, next) => {
     ON CONFLICT (id) DO UPDATE SET data = ${JSON.stringify(data)}::jsonb, updated_at = now()
     `);
     await logAudit("settings", "company", "update", data, req);
-    res.json({ ok: true });
+    return res.json({ ok: true });
   } catch (err) {
     console.error("Failed to save company settings:", err);
-    res.status(500).json({ error: "Failed to save company settings" });
+    return res.status(500).json({ error: "Failed to save company settings" });
   }
 });
 

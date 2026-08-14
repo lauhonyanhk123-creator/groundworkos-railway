@@ -68,7 +68,7 @@ router.post("/invoices", requireRole("manager"), async (req, res) => {
             const insertData = { id, invoiceNumber, ...data } as typeof invoicesTable.$inferInsert;
   const [inv] = await db.insert(invoicesTable).values(insertData).returning();
   await logAudit("invoice", id, "create", { invoiceNumber, status: insertData.status }, req);
-  res.status(201).json(await enrichInvoice(inv));
+  return res.status(201).json(await enrichInvoice(inv));
 });
 
 router.get("/invoices/:id", requireRole("manager"), async (req, res) => {
