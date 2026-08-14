@@ -13,8 +13,7 @@ for always-on services).
 - A Clerk account (clerk.com) for authentication — free to start.
 - An S3-compatible object storage bucket for file uploads (RAMS PDFs,
 insurance certs, photos). Railway does not provide object storage itself,
-so use AWS S3, Cloudflare R2, Backblaze B2, or similar. The app already
-supports this via STORAGE_DRIVER=s3.
+so use AWS S3, Cloudflare R2, Backblaze B2, or similar.
 - Optional: a custom domain, if you don't want to use the *.up.railway.app
 domain Railway assigns by default.
 
@@ -60,7 +59,6 @@ App settings:
 serve the built frontend itself)
 
 File storage:
-- STORAGE_DRIVER=s3
 - S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY
 from your chosen provider
 - S3_FORCE_PATH_STYLE=true (or false, depending on your provider)
