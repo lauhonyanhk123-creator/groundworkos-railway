@@ -20,7 +20,10 @@ const FA_API_BASE = "https://api.freeagent.com/v2";
 function creds() {
   const id = process.env.FREEAGENT_CLIENT_ID;
   const secret = process.env.FREEAGENT_CLIENT_SECRET;
-  if (!id || !secret) throw new Error("FREEAGENT_CLIENT_ID / FREEAGENT_CLIENT_SECRET not configured");
+  if (!id || !secret)
+    throw new Error(
+      "FREEAGENT_CLIENT_ID / FREEAGENT_CLIENT_SECRET not configured",
+    );
   return { id, secret };
 }
 
@@ -36,11 +39,16 @@ export async function getConnection() {
   return conn ?? null;
 }
 
-let refreshInFlight: Promise<typeof freeagentConnectionTable.$inferSelect> | null = null;
+let refreshInFlight: Promise<
+  typeof freeagentConnectionTable.$inferSelect
+> | null = null;
 
-async function refreshIfNeeded(conn: typeof freeagentConnectionTable.$inferSelect) {
+async function refreshIfNeeded(
+  conn: typeof freeagentConnectionTable.$inferSelect,
+) {
   // Refresh 5 min before expiry
-  if (Date.now() < new Date(conn.expiresAt).getTime() - 5 * 60 * 1000) return conn;
+  if (Date.now() < new Date(conn.expiresAt).getTime() - 5 * 60 * 1000)
+    return conn;
 
   // Concurrent requests hitting an expired token share one refresh instead of
   // racing each other and clobbering the stored refresh token.
@@ -54,18 +62,36 @@ async function refreshIfNeeded(conn: typeof freeagentConnectionTable.$inferSelec
 async function doRefresh(conn: typeof freeagentConnectionTable.$inferSelect) {
   const r = await fetch(FA_TOKEN_URL, {
     method: "POST",
-    headers: { Authorization: basicAuth(), "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: conn.refreshToken }),
+    headers: {
+      Authorization: basicAuth(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: conn.refreshToken,
+    }),
   });
-  if (!r.ok) throw new Error(`FreeAgent token refresh failed: ${r.status} ${await r.text()}`);
+  if (!r.ok)
+    throw new Error(
+      `FreeAgent token refresh failed: ${r.status} ${await r.text()}`,
+    );
 
-  const t = (await r.json()) as { access_token: string; refresh_token: string; expires_in: number };
+  const t = (await r.json()) as {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  };
   const expiresAt = new Date(Date.now() + t.expires_in * 1000);
   const updatedAt = new Date();
 
   const [updated] = await db
     .update(freeagentConnectionTable)
-    .set({ accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt, updatedAt })
+    .set({
+      accessToken: t.access_token,
+      refreshToken: t.refresh_token,
+      expiresAt,
+      updatedAt,
+    })
     .where(eq(freeagentConnectionTable.id, conn.id))
     .returning();
   return updated;
@@ -110,16 +136,33 @@ export async function exchangeCode(code: string) {
   if (!redirectUri) throw new Error("FREEAGENT_REDIRECT_URI not configured");
   const r = await fetch(FA_TOKEN_URL, {
     method: "POST",
-    headers: { Authorization: basicAuth(), "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: redirectUri }),
+    headers: {
+      Authorization: basicAuth(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: redirectUri,
+    }),
   });
-  if (!r.ok) throw new Error(`FreeAgent auth code exchange failed: ${r.status} ${await r.text()}`);
-  return r.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number }>;
+  if (!r.ok)
+    throw new Error(
+      `FreeAgent auth code exchange failed: ${r.status} ${await r.text()}`,
+    );
+  return r.json() as Promise<{
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  }>;
 }
 
 export async function fetchCompanyName(accessToken: string) {
   const r = await fetch(`${FA_API_BASE}/company`, {
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+    },
   });
   if (!r.ok) return null;
   const data = (await r.json()) as { company?: { name?: string } };
@@ -154,7 +197,10 @@ export async function disconnect() {
 // ─── Contact sync ─────────────────────────────────────────────────────────────
 
 export async function syncContact(clientId: string) {
-  const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
+  const [client] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, clientId));
   if (!client) throw new Error(`Client ${clientId} not found`);
 
   const [existing] = await db
@@ -162,21 +208,27 @@ export async function syncContact(clientId: string) {
     .from(freeagentClientMapTable)
     .where(eq(freeagentClientMapTable.clientId, clientId));
 
-  const contact: Record<string, unknown> = { organisation_name: client.companyName };
+  const contact: Record<string, unknown> = {
+    organisation_name: client.companyName,
+  };
   if (client.email) contact.email = client.email;
   if (client.phone) contact.phone_number = client.phone;
   if (client.address) contact.address1 = client.address;
 
   const method = existing ? "PUT" : "POST";
-  const path = existing ? `/contacts/${existing.freeagentContactId}` : "/contacts";
+  const path = existing
+    ? `/contacts/${existing.freeagentContactId}`
+    : "/contacts";
 
   const r = (await faFetch(path, {
     method,
     body: JSON.stringify({ contact }),
   })) as { contact?: { url?: string } };
 
-  const freeagentContactId = r.contact?.url?.split("/").pop() ?? existing?.freeagentContactId;
-  if (!freeagentContactId) throw new Error("No contact id returned from FreeAgent");
+  const freeagentContactId =
+    r.contact?.url?.split("/").pop() ?? existing?.freeagentContactId;
+  if (!freeagentContactId)
+    throw new Error("No contact id returned from FreeAgent");
 
   await db
     .insert(freeagentClientMapTable)
@@ -191,7 +243,11 @@ export async function syncContact(clientId: string) {
 
 export async function syncAllContacts() {
   const clients = await db.select().from(clientsTable);
-  return Promise.all(clients.map((c) => syncContact(c.id).catch((e) => ({ error: String(e), clientId: c.id }))));
+  return Promise.all(
+    clients.map((c) =>
+      syncContact(c.id).catch((e) => ({ error: String(e), clientId: c.id })),
+    ),
+  );
 }
 
 // ─── Invoice sync ─────────────────────────────────────────────────────────────
@@ -208,11 +264,15 @@ async function ensureContact(clientId: string | null) {
 }
 
 export async function syncInvoice(invoiceId: string) {
-  const [invoice] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId));
+  const [invoice] = await db
+    .select()
+    .from(invoicesTable)
+    .where(eq(invoicesTable.id, invoiceId));
   if (!invoice) throw new Error(`Invoice ${invoiceId} not found`);
 
   const freeagentContactId = await ensureContact(invoice.clientId);
-  if (!freeagentContactId) throw new Error("Invoice has no client to bill in FreeAgent");
+  if (!freeagentContactId)
+    throw new Error("Invoice has no client to bill in FreeAgent");
 
   const [existingMap] = await db
     .select()
@@ -236,15 +296,19 @@ export async function syncInvoice(invoiceId: string) {
   if (invoice.notes) faInvoice.comments = invoice.notes;
 
   const method = existingMap ? "PUT" : "POST";
-  const path = existingMap ? `/invoices/${existingMap.freeagentInvoiceId}` : "/invoices";
+  const path = existingMap
+    ? `/invoices/${existingMap.freeagentInvoiceId}`
+    : "/invoices";
 
   const r = (await faFetch(path, {
     method,
     body: JSON.stringify({ invoice: faInvoice }),
   })) as { invoice?: { url?: string } };
 
-  const freeagentInvoiceId = r.invoice?.url?.split("/").pop() ?? existingMap?.freeagentInvoiceId;
-  if (!freeagentInvoiceId) throw new Error("No invoice id returned from FreeAgent");
+  const freeagentInvoiceId =
+    r.invoice?.url?.split("/").pop() ?? existingMap?.freeagentInvoiceId;
+  if (!freeagentInvoiceId)
+    throw new Error("No invoice id returned from FreeAgent");
 
   await db
     .insert(freeagentInvoiceMapTable)
@@ -259,13 +323,23 @@ export async function syncInvoice(invoiceId: string) {
 
 export async function syncAllInvoices() {
   const invoices = await db.select().from(invoicesTable);
-  return Promise.all(invoices.map((inv) => syncInvoice(inv.id).catch((e) => ({ error: String(e), invoiceId: inv.id }))));
+  return Promise.all(
+    invoices.map((inv) =>
+      syncInvoice(inv.id).catch((e) => ({
+        error: String(e),
+        invoiceId: inv.id,
+      })),
+    ),
+  );
 }
 
 // ─── Quote (Estimate) sync ─────────────────────────────────────────────────────
 
 export async function syncQuote(quoteId: string) {
-  const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+  const [quote] = await db
+    .select()
+    .from(quotesTable)
+    .where(eq(quotesTable.id, quoteId));
   if (!quote) throw new Error(`Quote ${quoteId} not found`);
 
   const lineItems = await db
@@ -274,7 +348,8 @@ export async function syncQuote(quoteId: string) {
     .where(eq(lineItemsTable.quoteId, quoteId));
 
   const freeagentContactId = await ensureContact(quote.clientId);
-  if (!freeagentContactId) throw new Error("Quote has no client to bill in FreeAgent");
+  if (!freeagentContactId)
+    throw new Error("Quote has no client to bill in FreeAgent");
 
   const [existingMap] = await db
     .select()
@@ -283,8 +358,20 @@ export async function syncQuote(quoteId: string) {
 
   const items =
     lineItems.length > 0
-      ? lineItems.map((li) => ({ description: li.description, quantity: li.quantity, price: li.unitPrice, item_type: "Services" }))
-      : [{ description: quote.title ?? `Quote ${quote.quoteNumber}`, quantity: 1, price: quote.subtotal, item_type: "Services" }];
+      ? lineItems.map((li) => ({
+          description: li.description,
+          quantity: li.quantity,
+          price: li.unitPrice,
+          item_type: "Services",
+        }))
+      : [
+          {
+            description: quote.title ?? `Quote ${quote.quoteNumber}`,
+            quantity: 1,
+            price: quote.subtotal,
+            item_type: "Services",
+          },
+        ];
 
   const faEstimate: Record<string, unknown> = {
     contact: `${FA_API_BASE}/contacts/${freeagentContactId}`,
@@ -295,15 +382,19 @@ export async function syncQuote(quoteId: string) {
   if (quote.notes) faEstimate.comments = quote.notes;
 
   const method = existingMap ? "PUT" : "POST";
-  const path = existingMap ? `/estimates/${existingMap.freeagentEstimateId}` : "/estimates";
+  const path = existingMap
+    ? `/estimates/${existingMap.freeagentEstimateId}`
+    : "/estimates";
 
   const r = (await faFetch(path, {
     method,
     body: JSON.stringify({ estimate: faEstimate }),
   })) as { estimate?: { url?: string } };
 
-  const freeagentEstimateId = r.estimate?.url?.split("/").pop() ?? existingMap?.freeagentEstimateId;
-  if (!freeagentEstimateId) throw new Error("No estimate id returned from FreeAgent");
+  const freeagentEstimateId =
+    r.estimate?.url?.split("/").pop() ?? existingMap?.freeagentEstimateId;
+  if (!freeagentEstimateId)
+    throw new Error("No estimate id returned from FreeAgent");
 
   await db
     .insert(freeagentQuoteMapTable)
@@ -318,7 +409,11 @@ export async function syncQuote(quoteId: string) {
 
 export async function syncAllQuotes() {
   const quotes = await db.select().from(quotesTable);
-  return Promise.all(quotes.map((q) => syncQuote(q.id).catch((e) => ({ error: String(e), quoteId: q.id }))));
+  return Promise.all(
+    quotes.map((q) =>
+      syncQuote(q.id).catch((e) => ({ error: String(e), quoteId: q.id })),
+    ),
+  );
 }
 
 // ─── Pull payments from FreeAgent ────────────────────────────────────────────
@@ -328,10 +423,15 @@ export async function pullPayments() {
   let updated = 0;
 
   for (const { invoiceId, freeagentInvoiceId } of maps) {
-    const r = (await faFetch(`/invoices/${freeagentInvoiceId}`)) as { invoice?: { status?: string } };
+    const r = (await faFetch(`/invoices/${freeagentInvoiceId}`)) as {
+      invoice?: { status?: string };
+    };
     if (r.invoice?.status !== "Paid") continue;
 
-    const [inv] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId));
+    const [inv] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoiceId));
     if (!inv || inv.status === "paid") continue;
     await db
       .update(invoicesTable)

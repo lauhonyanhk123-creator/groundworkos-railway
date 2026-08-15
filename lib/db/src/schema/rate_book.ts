@@ -12,9 +12,13 @@ export const rateBookTable = pgTable("rate_book", {
   plantRate: real("plant_rate").notNull().default(0),
   totalRate: real("total_rate").notNull().default(0),
   notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertRateBookEntrySchema = createInsertSchema(rateBookTable).omit({ createdAt: true });
+export const insertRateBookEntrySchema = createInsertSchema(rateBookTable).omit(
+  { createdAt: true },
+);
 export type InsertRateBookEntry = z.infer<typeof insertRateBookEntrySchema>;
 export type RateBookEntry = typeof rateBookTable.$inferSelect;

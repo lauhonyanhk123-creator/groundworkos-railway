@@ -18,7 +18,9 @@ export const quotesTable = pgTable("quotes", {
   shareToken: text("share_token").unique(),
   approvedByName: text("approved_by_name"),
   approvedAt: timestamp("approved_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export const lineItemsTable = pgTable("line_items", {
@@ -31,7 +33,9 @@ export const lineItemsTable = pgTable("line_items", {
   total: real("total").notNull().default(0),
 });
 
-export const insertQuoteSchema = createInsertSchema(quotesTable).omit({ createdAt: true });
+export const insertQuoteSchema = createInsertSchema(quotesTable).omit({
+  createdAt: true,
+});
 export const insertLineItemSchema = createInsertSchema(lineItemsTable);
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;
 export type InsertLineItem = z.infer<typeof insertLineItemSchema>;

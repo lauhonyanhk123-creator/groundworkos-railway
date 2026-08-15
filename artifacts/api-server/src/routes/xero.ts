@@ -40,7 +40,11 @@ router.get("/xero/auth", requireRole("admin"), (req, res) => {
     res.redirect(xero.buildAuthUrl(state));
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Configuration error";
-    res.status(500).send(`Xero not configured: ${msg}. Please set XERO_CLIENT_ID, XERO_CLIENT_SECRET, and XERO_REDIRECT_URI.`);
+    res
+      .status(500)
+      .send(
+        `Xero not configured: ${msg}. Please set XERO_CLIENT_ID, XERO_CLIENT_SECRET, and XERO_REDIRECT_URI.`,
+      );
   }
 });
 
@@ -48,17 +52,22 @@ router.get("/xero/callback", async (req, res) => {
   const { code, state, error } = req.query as Record<string, string>;
 
   if (error) {
-    return res.redirect(`/settings?xero=error&msg=${encodeURIComponent(error)}`);
+    return res.redirect(
+      `/settings?xero=error&msg=${encodeURIComponent(error)}`,
+    );
   }
   if (!state || !oauthStates.has(state)) {
-    return res.status(400).send("Invalid OAuth state — please try connecting again.");
+    return res
+      .status(400)
+      .send("Invalid OAuth state — please try connecting again.");
   }
   oauthStates.delete(state);
 
   try {
     const tokens = await xero.exchangeCode(code);
     const tenants = await xero.fetchTenants(tokens.access_token);
-    if (!tenants.length) throw new Error("No Xero organisations found for this account.");
+    if (!tenants.length)
+      throw new Error("No Xero organisations found for this account.");
 
     // Use first org; multi-tenant selection could be added here
     const { tenantId, tenantName } = tenants[0];
@@ -88,7 +97,9 @@ router.post("/xero/sync/contacts", requireRole("admin"), async (_req, res) => {
   try {
     const results = await xero.syncAllContacts();
     const synced = results.filter((r) => !("error" in r)).length;
-    const errors = results.filter((r): r is { error: string; clientId: string } => "error" in r);
+    const errors = results.filter(
+      (r): r is { error: string; clientId: string } => "error" in r,
+    );
     res.json({ synced, failed: errors.length, errors });
   } catch (err) {
     res.status(500).json({ error: String(err) });
@@ -99,7 +110,9 @@ router.post("/xero/sync/invoices", requireRole("admin"), async (_req, res) => {
   try {
     const results = await xero.syncAllInvoices();
     const synced = results.filter((r) => !("error" in r)).length;
-    const errors = results.filter((r): r is { error: string; invoiceId: string } => "error" in r);
+    const errors = results.filter(
+      (r): r is { error: string; invoiceId: string } => "error" in r,
+    );
     res.json({ synced, failed: errors.length, errors });
   } catch (err) {
     res.status(500).json({ error: String(err) });
@@ -110,7 +123,9 @@ router.post("/xero/sync/quotes", requireRole("admin"), async (_req, res) => {
   try {
     const results = await xero.syncAllQuotes();
     const synced = results.filter((r) => !("error" in r)).length;
-    const errors = results.filter((r): r is { error: string; quoteId: string } => "error" in r);
+    const errors = results.filter(
+      (r): r is { error: string; quoteId: string } => "error" in r,
+    );
     res.json({ synced, failed: errors.length, errors });
   } catch (err) {
     res.status(500).json({ error: String(err) });

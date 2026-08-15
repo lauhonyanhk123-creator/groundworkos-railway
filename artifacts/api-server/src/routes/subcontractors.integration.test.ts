@@ -53,7 +53,11 @@ describe("full write cycle for /api/subcontractors/:id", () => {
     const createRes = await fetch(`${baseUrl}/api/subcontractors`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyName: "Integration Groundworks Ltd", trade: "Groundworks", cisStatus: "unverified" }),
+      body: JSON.stringify({
+        companyName: "Integration Groundworks Ltd",
+        trade: "Groundworks",
+        cisStatus: "unverified",
+      }),
     });
     expect(createRes.status).toBe(201);
     const created = await createRes.json();
@@ -65,25 +69,39 @@ describe("full write cycle for /api/subcontractors/:id", () => {
     const fetched = await getRes.json();
     expect(fetched.trade).toBe("Groundworks");
 
-    const patchRes = await fetch(`${baseUrl}/api/subcontractors/${created.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ phone: "07000 000000" }),
-    });
+    const patchRes = await fetch(
+      `${baseUrl}/api/subcontractors/${created.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: "07000 000000" }),
+      },
+    );
     expect(patchRes.status).toBe(200);
     const patched = await patchRes.json();
     expect(patched.phone).toBe("07000 000000");
 
-    const [persisted] = await db.select().from(subcontractorsTable).where(eq(subcontractorsTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(subcontractorsTable)
+      .where(eq(subcontractorsTable.id, created.id));
     expect(persisted?.phone).toBe("07000 000000");
 
-    const deleteRes = await fetch(`${baseUrl}/api/subcontractors/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(
+      `${baseUrl}/api/subcontractors/${created.id}`,
+      { method: "DELETE" },
+    );
     expect(deleteRes.status).toBe(204);
 
-    const getAfterDelete = await fetch(`${baseUrl}/api/subcontractors/${created.id}`);
+    const getAfterDelete = await fetch(
+      `${baseUrl}/api/subcontractors/${created.id}`,
+    );
     expect(getAfterDelete.status).toBe(404);
 
-    const rowsAfterDelete = await db.select().from(subcontractorsTable).where(eq(subcontractorsTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(subcontractorsTable)
+      .where(eq(subcontractorsTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });
@@ -96,24 +114,33 @@ describe("PATCH /api/subcontractors/:id admin-only field gating", () => {
     vi.mocked(clerkClient.users.getUser).mockResolvedValueOnce({
       publicMetadata: { role: "manager" },
     } as any);
-    const forbiddenRes = await fetch(`${baseUrl}/api/subcontractors/${existing!.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cisDeductionRate: 0 }),
-    });
+    const forbiddenRes = await fetch(
+      `${baseUrl}/api/subcontractors/${existing!.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cisDeductionRate: 0 }),
+      },
+    );
     expect(forbiddenRes.status).toBe(403);
 
-    const [unchanged] = await db.select().from(subcontractorsTable).where(eq(subcontractorsTable.id, existing!.id));
+    const [unchanged] = await db
+      .select()
+      .from(subcontractorsTable)
+      .where(eq(subcontractorsTable.id, existing!.id));
     expect(unchanged?.cisDeductionRate).toBe(existing!.cisDeductionRate);
 
     vi.mocked(clerkClient.users.getUser).mockResolvedValueOnce({
       publicMetadata: { role: "manager" },
     } as any);
-    const allowedRes = await fetch(`${baseUrl}/api/subcontractors/${existing!.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ notes: "Manager-editable note" }),
-    });
+    const allowedRes = await fetch(
+      `${baseUrl}/api/subcontractors/${existing!.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: "Manager-editable note" }),
+      },
+    );
     expect(allowedRes.status).toBe(200);
     const allowed = await allowedRes.json();
     expect(allowed.notes).toBe("Manager-editable note");
@@ -127,17 +154,26 @@ describe("PATCH /api/subcontractors/:id admin-only field gating", () => {
     });
     const created = await createRes.json();
 
-    const patchRes = await fetch(`${baseUrl}/api/subcontractors/${created.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cisStatus: "gross", cisDeductionRate: 0, utrNumber: "1111 22222 33" }),
-    });
+    const patchRes = await fetch(
+      `${baseUrl}/api/subcontractors/${created.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cisStatus: "gross",
+          cisDeductionRate: 0,
+          utrNumber: "1111 22222 33",
+        }),
+      },
+    );
     expect(patchRes.status).toBe(200);
     const patched = await patchRes.json();
     expect(patched.cisStatus).toBe("gross");
     expect(patched.cisDeductionRate).toBe(0);
     expect(patched.utrNumber).toBe("1111 22222 33");
 
-    await fetch(`${baseUrl}/api/subcontractors/${created.id}`, { method: "DELETE" });
+    await fetch(`${baseUrl}/api/subcontractors/${created.id}`, {
+      method: "DELETE",
+    });
   });
 });

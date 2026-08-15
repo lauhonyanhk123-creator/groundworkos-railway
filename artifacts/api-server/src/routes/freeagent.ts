@@ -35,7 +35,11 @@ router.get("/freeagent/auth", requireRole("admin"), (req, res) => {
     res.redirect(freeagent.buildAuthUrl(state));
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Configuration error";
-    res.status(500).send(`FreeAgent not configured: ${msg}. Please set FREEAGENT_CLIENT_ID, FREEAGENT_CLIENT_SECRET, and FREEAGENT_REDIRECT_URI.`);
+    res
+      .status(500)
+      .send(
+        `FreeAgent not configured: ${msg}. Please set FREEAGENT_CLIENT_ID, FREEAGENT_CLIENT_SECRET, and FREEAGENT_REDIRECT_URI.`,
+      );
   }
 });
 
@@ -43,10 +47,14 @@ router.get("/freeagent/callback", async (req, res) => {
   const { code, state, error } = req.query as Record<string, string>;
 
   if (error) {
-    return res.redirect(`/settings?freeagent=error&msg=${encodeURIComponent(error)}`);
+    return res.redirect(
+      `/settings?freeagent=error&msg=${encodeURIComponent(error)}`,
+    );
   }
   if (!state || !oauthStates.has(state)) {
-    return res.status(400).send("Invalid OAuth state — please try connecting again.");
+    return res
+      .status(400)
+      .send("Invalid OAuth state — please try connecting again.");
   }
   oauthStates.delete(state);
 
@@ -62,55 +70,81 @@ router.get("/freeagent/callback", async (req, res) => {
   }
 });
 
-router.delete("/freeagent/disconnect", requireRole("admin"), async (_req, res) => {
-  try {
-    await freeagent.disconnect();
-    res.json({ disconnected: true });
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
-  }
-});
+router.delete(
+  "/freeagent/disconnect",
+  requireRole("admin"),
+  async (_req, res) => {
+    try {
+      await freeagent.disconnect();
+      res.json({ disconnected: true });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  },
+);
 
-router.post("/freeagent/sync/contacts", requireRole("admin"), async (_req, res) => {
-  try {
-    const results = await freeagent.syncAllContacts();
-    const synced = results.filter((r) => !("error" in r)).length;
-    const errors = results.filter((r): r is { error: string; clientId: string } => "error" in r);
-    res.json({ synced, failed: errors.length, errors });
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
-  }
-});
+router.post(
+  "/freeagent/sync/contacts",
+  requireRole("admin"),
+  async (_req, res) => {
+    try {
+      const results = await freeagent.syncAllContacts();
+      const synced = results.filter((r) => !("error" in r)).length;
+      const errors = results.filter(
+        (r): r is { error: string; clientId: string } => "error" in r,
+      );
+      res.json({ synced, failed: errors.length, errors });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  },
+);
 
-router.post("/freeagent/sync/invoices", requireRole("admin"), async (_req, res) => {
-  try {
-    const results = await freeagent.syncAllInvoices();
-    const synced = results.filter((r) => !("error" in r)).length;
-    const errors = results.filter((r): r is { error: string; invoiceId: string } => "error" in r);
-    res.json({ synced, failed: errors.length, errors });
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
-  }
-});
+router.post(
+  "/freeagent/sync/invoices",
+  requireRole("admin"),
+  async (_req, res) => {
+    try {
+      const results = await freeagent.syncAllInvoices();
+      const synced = results.filter((r) => !("error" in r)).length;
+      const errors = results.filter(
+        (r): r is { error: string; invoiceId: string } => "error" in r,
+      );
+      res.json({ synced, failed: errors.length, errors });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  },
+);
 
-router.post("/freeagent/sync/quotes", requireRole("admin"), async (_req, res) => {
-  try {
-    const results = await freeagent.syncAllQuotes();
-    const synced = results.filter((r) => !("error" in r)).length;
-    const errors = results.filter((r): r is { error: string; quoteId: string } => "error" in r);
-    res.json({ synced, failed: errors.length, errors });
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
-  }
-});
+router.post(
+  "/freeagent/sync/quotes",
+  requireRole("admin"),
+  async (_req, res) => {
+    try {
+      const results = await freeagent.syncAllQuotes();
+      const synced = results.filter((r) => !("error" in r)).length;
+      const errors = results.filter(
+        (r): r is { error: string; quoteId: string } => "error" in r,
+      );
+      res.json({ synced, failed: errors.length, errors });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  },
+);
 
-router.post("/freeagent/pull/payments", requireRole("admin"), async (_req, res) => {
-  try {
-    const result = await freeagent.pullPayments();
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: String(err) });
-  }
-});
+router.post(
+  "/freeagent/pull/payments",
+  requireRole("admin"),
+  async (_req, res) => {
+    try {
+      const result = await freeagent.pullPayments();
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  },
+);
 
 export default router;

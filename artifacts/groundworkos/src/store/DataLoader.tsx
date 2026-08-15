@@ -1,20 +1,37 @@
-import { useEffect } from 'react';
+import { useEffect } from "react";
 import {
-  useGetClients, useGetJobs, useGetQuotes, useGetInvoices,
-  useGetSubcontractors, useGetDocuments, useGetSchedule,
-  useGetPlant, useGetRateBook,
-} from '@workspace/api-client-react';
-import { useApp } from './AppContext';
+  useGetClients,
+  useGetJobs,
+  useGetQuotes,
+  useGetInvoices,
+  useGetSubcontractors,
+  useGetDocuments,
+  useGetSchedule,
+  useGetPlant,
+  useGetRateBook,
+} from "@workspace/api-client-react";
+import { useApp } from "./AppContext";
 import {
-  toClient, toJob, toQuote, toInvoice, toSubcontractor,
-  toDocument, toScheduleEntry, toPlant, toTimesheet, toPurchaseOrder,
-} from '../lib/apiTransforms';
-import type { CISReturn } from '../types';
-import { toast } from 'sonner';
+  toClient,
+  toJob,
+  toQuote,
+  toInvoice,
+  toSubcontractor,
+  toDocument,
+  toScheduleEntry,
+  toPlant,
+  toTimesheet,
+  toPurchaseOrder,
+} from "../lib/apiTransforms";
+import type { CISReturn } from "../types";
+import { toast } from "sonner";
 
-const BASE = (import.meta as any).env?.BASE_URL?.replace(/\/$/, '') ?? '';
+const BASE = (import.meta as any).env?.BASE_URL?.replace(/\/$/, "") ?? "";
 
-async function loadRows(path: string, label: string): Promise<Record<string, unknown>[] | null> {
+async function loadRows(
+  path: string,
+  label: string,
+): Promise<Record<string, unknown>[] | null> {
   try {
     const res = await fetch(`${BASE}${path}`);
     // 401/403 mean the current role isn't permitted this dataset (e.g. a foreman
@@ -25,19 +42,19 @@ async function loadRows(path: string, label: string): Promise<Record<string, unk
     return Array.isArray(data) ? (data as Record<string, unknown>[]) : null;
   } catch (err) {
     console.error(`Failed to load ${label}:`, err);
-    toast.error(`Couldn't load ${label}`, { id: 'dataload-error' });
+    toast.error(`Couldn't load ${label}`, { id: "dataload-error" });
     return null;
   }
 }
 
 function mapCisReturn(row: Record<string, unknown>, idx: number): CISReturn {
-  const period = (row.period as string | null) ?? '';
-  const taxMonth = period ? period.slice(0, 7) : '';
+  const period = (row.period as string | null) ?? "";
+  const taxMonth = period ? period.slice(0, 7) : "";
   return {
     id: `cis-${idx}-${taxMonth}`,
     tax_month: taxMonth,
-    subcontractor_id: '',
-    subcontractor_name: (row.company_name as string) ?? '—',
+    subcontractor_id: "",
+    subcontractor_name: (row.company_name as string) ?? "—",
     gross_payment: Number(row.gross_payment ?? 0),
     deduction_rate: Number(row.cis_deduction_rate ?? 0),
     deduction_amount: Number(row.cis_deducted ?? 0),
@@ -61,62 +78,88 @@ export function DataLoader() {
   const { data: rateBook } = useGetRateBook();
 
   useEffect(() => {
-    if (clients) dispatch({ type: 'INIT_CLIENTS', clients: clients.map(toClient) });
+    if (clients)
+      dispatch({ type: "INIT_CLIENTS", clients: clients.map(toClient) });
   }, [clients, dispatch]);
 
   useEffect(() => {
-    if (jobs) dispatch({ type: 'INIT_JOBS', jobs: jobs.map(toJob) });
+    if (jobs) dispatch({ type: "INIT_JOBS", jobs: jobs.map(toJob) });
   }, [jobs, dispatch]);
 
   useEffect(() => {
-    if (quotes) dispatch({ type: 'INIT_QUOTES', quotes: quotes.map(toQuote) });
+    if (quotes) dispatch({ type: "INIT_QUOTES", quotes: quotes.map(toQuote) });
   }, [quotes, dispatch]);
 
   useEffect(() => {
-    if (invoices) dispatch({ type: 'INIT_INVOICES', invoices: invoices.map(toInvoice) });
+    if (invoices)
+      dispatch({ type: "INIT_INVOICES", invoices: invoices.map(toInvoice) });
   }, [invoices, dispatch]);
 
   useEffect(() => {
-    if (subcontractors) dispatch({ type: 'INIT_SUBCONTRACTORS', subcontractors: subcontractors.map(toSubcontractor) });
+    if (subcontractors)
+      dispatch({
+        type: "INIT_SUBCONTRACTORS",
+        subcontractors: subcontractors.map(toSubcontractor),
+      });
   }, [subcontractors, dispatch]);
 
   useEffect(() => {
-    if (documents) dispatch({ type: 'INIT_DOCUMENTS', documents: documents.map(toDocument) });
+    if (documents)
+      dispatch({
+        type: "INIT_DOCUMENTS",
+        documents: documents.map(toDocument),
+      });
   }, [documents, dispatch]);
 
   useEffect(() => {
-    if (schedule) dispatch({ type: 'INIT_SCHEDULE', schedule: schedule.map(toScheduleEntry) });
+    if (schedule)
+      dispatch({
+        type: "INIT_SCHEDULE",
+        schedule: schedule.map(toScheduleEntry),
+      });
   }, [schedule, dispatch]);
 
   useEffect(() => {
-    if (plant) dispatch({ type: 'INIT_PLANT', plant: plant.map(toPlant) });
+    if (plant) dispatch({ type: "INIT_PLANT", plant: plant.map(toPlant) });
   }, [plant, dispatch]);
 
   useEffect(() => {
-    if (rateBook) dispatch({ type: 'INIT_RATE_BOOK', rateBook });
+    if (rateBook) dispatch({ type: "INIT_RATE_BOOK", rateBook });
   }, [rateBook, dispatch]);
 
   useEffect(() => {
     if (!clientsLoading && !jobsLoading && !quotesLoading && !invoicesLoading) {
-      dispatch({ type: 'SET_LOADED' });
+      dispatch({ type: "SET_LOADED" });
     }
   }, [clientsLoading, jobsLoading, quotesLoading, invoicesLoading, dispatch]);
 
   useEffect(() => {
-    loadRows('/api/purchase-orders', 'purchase orders').then((rows) => {
-      if (rows) dispatch({ type: 'INIT_PURCHASE_ORDERS', purchaseOrders: rows.map(toPurchaseOrder) });
+    loadRows("/api/purchase-orders", "purchase orders").then((rows) => {
+      if (rows)
+        dispatch({
+          type: "INIT_PURCHASE_ORDERS",
+          purchaseOrders: rows.map(toPurchaseOrder),
+        });
     });
   }, [dispatch]);
 
   useEffect(() => {
-    loadRows('/api/timesheets', 'timesheets').then((rows) => {
-      if (rows) dispatch({ type: 'INIT_TIMESHEETS', timesheets: rows.map(toTimesheet) });
+    loadRows("/api/timesheets", "timesheets").then((rows) => {
+      if (rows)
+        dispatch({
+          type: "INIT_TIMESHEETS",
+          timesheets: rows.map(toTimesheet),
+        });
     });
   }, [dispatch]);
 
   useEffect(() => {
-    loadRows('/api/cis/returns', 'CIS returns').then((rows) => {
-      if (rows) dispatch({ type: 'INIT_CIS_RETURNS', cisReturns: rows.map(mapCisReturn) });
+    loadRows("/api/cis/returns", "CIS returns").then((rows) => {
+      if (rows)
+        dispatch({
+          type: "INIT_CIS_RETURNS",
+          cisReturns: rows.map(mapCisReturn),
+        });
     });
   }, [dispatch]);
 
@@ -129,12 +172,12 @@ export function DataLoader() {
         const data = await res.json();
         // Only merge a real settings object. A non-200 body is often
         // { error: ... }, which must not be treated as settings.
-        if (data && typeof data === 'object' && !Array.isArray(data)) {
-          dispatch({ type: 'INIT_SETTINGS', settings: data });
+        if (data && typeof data === "object" && !Array.isArray(data)) {
+          dispatch({ type: "INIT_SETTINGS", settings: data });
         }
       } catch (err) {
-        console.error('Failed to load company settings:', err);
-        toast.error("Couldn't load company settings", { id: 'dataload-error' });
+        console.error("Failed to load company settings:", err);
+        toast.error("Couldn't load company settings", { id: "dataload-error" });
       }
     })();
   }, [dispatch]);

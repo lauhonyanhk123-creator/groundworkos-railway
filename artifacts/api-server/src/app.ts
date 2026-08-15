@@ -1,4 +1,8 @@
-import express, { type Express, type RequestHandler, type ErrorRequestHandler } from "express";
+import express, {
+  type Express,
+  type RequestHandler,
+  type ErrorRequestHandler,
+} from "express";
 import path from "path";
 import cors from "cors";
 import helmet from "helmet";
@@ -72,12 +76,14 @@ app.use(cors({ credentials: true, origin: process.env.APP_URL ?? true }));
  * storage — otherwise a file whose Content-Type is application/json (or
  * form-urlencoded) would be drained here before it reaches the relay handler.
  */
-const skipUploadRelay = (handler: RequestHandler): RequestHandler => (req, res, next) => {
-  if (req.method === "PUT" && req.path.includes("/storage/uploads/direct/")) {
-    return next();
-  }
-  return handler(req, res, next);
-};
+const skipUploadRelay =
+  (handler: RequestHandler): RequestHandler =>
+  (req, res, next) => {
+    if (req.method === "PUT" && req.path.includes("/storage/uploads/direct/")) {
+      return next();
+    }
+    return handler(req, res, next);
+  };
 
 app.use(skipUploadRelay(express.json()));
 app.use(skipUploadRelay(express.urlencoded({ extended: true })));
@@ -85,7 +91,9 @@ app.use(skipUploadRelay(express.urlencoded({ extended: true })));
 app.use(
   clerkMiddleware({
     publishableKey: process.env.CLERK_PUBLISHABLE_KEY,
-    ...(process.env.APP_URL ? { authorizedParties: [process.env.APP_URL] } : {}),
+    ...(process.env.APP_URL
+      ? { authorizedParties: [process.env.APP_URL] }
+      : {}),
   }),
 );
 
@@ -163,8 +171,8 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     typeof err?.status === "number"
       ? err.status
       : typeof err?.statusCode === "number"
-      ? err.statusCode
-      : 500;
+        ? err.statusCode
+        : 500;
 
   (req.log ?? logger).error(
     { err, status, method: req.method, url: req.originalUrl },
@@ -173,7 +181,10 @@ const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
 
   res.status(status).json({
     error: {
-      message: status === 500 ? "Internal server error" : (err?.message ?? "Request failed"),
+      message:
+        status === 500
+          ? "Internal server error"
+          : (err?.message ?? "Request failed"),
       status,
     },
   });

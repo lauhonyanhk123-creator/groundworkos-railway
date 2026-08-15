@@ -1,4 +1,10 @@
-import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import {
+  Router,
+  type IRouter,
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import { getAuth } from "@clerk/express";
 import healthRouter from "./health";
 import storageRouter from "./storage";
@@ -37,7 +43,9 @@ const PUBLIC_PATHS = [
 ];
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (PUBLIC_PATHS.some((p) => req.path === p || req.path.startsWith(p + "/"))) {
+  if (
+    PUBLIC_PATHS.some((p) => req.path === p || req.path.startsWith(p + "/"))
+  ) {
     return next();
   }
   const auth = getAuth(req);

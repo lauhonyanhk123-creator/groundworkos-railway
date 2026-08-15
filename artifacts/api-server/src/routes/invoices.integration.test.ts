@@ -54,9 +54,13 @@ describe("POST /api/invoices", () => {
     // the suite happens to run in.
     const year = new Date().getFullYear();
 
-    const seededInvoices = await db.select({ invoiceNumber: invoicesTable.invoiceNumber }).from(invoicesTable);
+    const seededInvoices = await db
+      .select({ invoiceNumber: invoicesTable.invoiceNumber })
+      .from(invoicesTable);
     expect(seededInvoices.length).toBeGreaterThan(0);
-    expect(seededInvoices.some((i) => i.invoiceNumber.startsWith(`INV-${year}-`))).toBe(true);
+    expect(
+      seededInvoices.some((i) => i.invoiceNumber.startsWith(`INV-${year}-`)),
+    ).toBe(true);
     const seededNumbers = new Set(seededInvoices.map((i) => i.invoiceNumber));
 
     const res = await fetch(`${baseUrl}/api/invoices`, {
@@ -71,7 +75,10 @@ describe("POST /api/invoices", () => {
     expect(invoice.invoiceNumber).toMatch(new RegExp(`^INV-${year}-\\d+$`));
     expect(seededNumbers.has(invoice.invoiceNumber)).toBe(false);
 
-    const rows = await db.select().from(invoicesTable).where(eq(invoicesTable.invoiceNumber, invoice.invoiceNumber));
+    const rows = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.invoiceNumber, invoice.invoiceNumber));
     expect(rows).toHaveLength(1);
   });
 
@@ -94,7 +101,11 @@ describe("POST /api/invoices", () => {
     const res = await fetch(`${baseUrl}/api/invoices`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ issuedDate: "2026-06-01", subtotal: 1000, subcontractorId: "s2" }),
+      body: JSON.stringify({
+        issuedDate: "2026-06-01",
+        subtotal: 1000,
+        subcontractorId: "s2",
+      }),
     });
     expect(res.status).toBe(201);
     const invoice = await res.json();
@@ -107,7 +118,12 @@ describe("full write cycle for /api/invoices/:id", () => {
     const createRes = await fetch(`${baseUrl}/api/invoices`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ issuedDate: "2026-06-01", subtotal: 1000, subcontractorId: "s2", status: "draft" }),
+      body: JSON.stringify({
+        issuedDate: "2026-06-01",
+        subtotal: 1000,
+        subcontractorId: "s2",
+        status: "draft",
+      }),
     });
     expect(createRes.status).toBe(201);
     const created = await createRes.json();
@@ -121,11 +137,14 @@ describe("full write cycle for /api/invoices/:id", () => {
 
     // A partial update that touches neither subtotal nor subcontractorId must
     // leave the previously-computed financial fields untouched.
-    const statusOnlyPatch = await fetch(`${baseUrl}/api/invoices/${created.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "sent" }),
-    });
+    const statusOnlyPatch = await fetch(
+      `${baseUrl}/api/invoices/${created.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "sent" }),
+      },
+    );
     expect(statusOnlyPatch.status).toBe(200);
     const statusPatched = await statusOnlyPatch.json();
     expect(statusPatched.status).toBe("sent");
@@ -147,18 +166,26 @@ describe("full write cycle for /api/invoices/:id", () => {
     expect(subtotalPatched.totalAmount).toBe(2400);
     expect(subtotalPatched.cisDeduction).toBe(400);
 
-    const [persisted] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, created.id));
     expect(persisted?.subtotal).toBe(2000);
     expect(persisted?.cisDeduction).toBe(400);
     expect(persisted?.status).toBe("sent");
 
-    const deleteRes = await fetch(`${baseUrl}/api/invoices/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/invoices/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
     const getAfterDelete = await fetch(`${baseUrl}/api/invoices/${created.id}`);
     expect(getAfterDelete.status).toBe(404);
 
-    const rowsAfterDelete = await db.select().from(invoicesTable).where(eq(invoicesTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

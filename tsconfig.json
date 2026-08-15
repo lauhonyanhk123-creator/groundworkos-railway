@@ -4,7 +4,7 @@
   "files": [],
   "references": [
     {
-        "path": "./lib/shared-role"
+      "path": "./lib/shared-role"
     },
     {
       "path": "./lib/db"

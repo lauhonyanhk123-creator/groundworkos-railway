@@ -12,9 +12,13 @@ export const timesheetsTable = pgTable("timesheets", {
   cost: real("cost"),
   description: text("description"),
   createdBy: text("created_by"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertTimesheetSchema = createInsertSchema(timesheetsTable).omit({ createdAt: true });
+export const insertTimesheetSchema = createInsertSchema(timesheetsTable).omit({
+  createdAt: true,
+});
 export type InsertTimesheet = z.infer<typeof insertTimesheetSchema>;
 export type TimesheetRow = typeof timesheetsTable.$inferSelect;

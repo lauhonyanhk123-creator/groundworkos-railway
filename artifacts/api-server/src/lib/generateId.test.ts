@@ -8,7 +8,8 @@ vi.mock("@workspace/db", () => ({ db: { execute: vi.fn() } }));
 
 const { generateId } = await import("./generateId");
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 describe("generateId", () => {
   it("returns a random UUID", () => {
@@ -26,7 +27,9 @@ describe("generateId", () => {
     // a caller mistakenly threading a client-supplied value through has no
     // effect: the result is always freshly server-generated, never the
     // value that was passed in.
-    const id = (generateId as unknown as (clientId?: string) => string)(clientSuppliedId);
+    const id = (generateId as unknown as (clientId?: string) => string)(
+      clientSuppliedId,
+    );
     expect(id).not.toBe(clientSuppliedId);
     expect(id).toMatch(UUID_RE);
   });

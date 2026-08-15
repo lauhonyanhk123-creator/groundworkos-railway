@@ -170,7 +170,14 @@ describe("toQuote", () => {
       createdAt: "2026-01-01T00:00:00Z",
       sentAt: "2026-01-02T00:00:00Z",
       lineItems: [
-        { id: "li-1", description: "Excavation", quantity: 10, unit: "m3", unitPrice: 50, total: 500 },
+        {
+          id: "li-1",
+          description: "Excavation",
+          quantity: 10,
+          unit: "m3",
+          unitPrice: 50,
+          total: 500,
+        },
       ],
     } as any);
 
@@ -190,7 +197,14 @@ describe("toQuote", () => {
       created_at: "2026-01-01T00:00:00Z",
       sent_at: "2026-01-02T00:00:00Z",
       line_items: [
-        { id: "li-1", description: "Excavation", quantity: 10, unit: "m3", unit_price: 50, total: 500 },
+        {
+          id: "li-1",
+          description: "Excavation",
+          quantity: 10,
+          unit: "m3",
+          unit_price: 50,
+          total: 500,
+        },
       ],
     });
   });

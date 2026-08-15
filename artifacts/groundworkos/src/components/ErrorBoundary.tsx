@@ -104,14 +104,22 @@ export class ErrorBoundary extends Component<Props, State> {
                 cursor: "pointer",
               }}
             >
-              <summary style={{ fontWeight: 600, marginBottom: "8px", cursor: "pointer" }}>
+              <summary
+                style={{
+                  fontWeight: 600,
+                  marginBottom: "8px",
+                  cursor: "pointer",
+                }}
+              >
                 Error details
               </summary>
               {this.state.error.message}
             </details>
           )}
 
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+          <div
+            style={{ display: "flex", gap: "12px", justifyContent: "center" }}
+          >
             <button
               onClick={() => window.location.reload()}
               style={{

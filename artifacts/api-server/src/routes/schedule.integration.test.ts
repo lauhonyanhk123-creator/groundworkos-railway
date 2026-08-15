@@ -82,7 +82,10 @@ describe("full write cycle for /api/schedule/:id", () => {
     const patchRes = await fetch(`${baseUrl}/api/schedule/${created.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ startDatetime: "2026-06-02T08:00:00.000Z", crewCount: 5 }),
+      body: JSON.stringify({
+        startDatetime: "2026-06-02T08:00:00.000Z",
+        crewCount: 5,
+      }),
     });
     expect(patchRes.status).toBe(200);
     const patched = await patchRes.json();
@@ -91,14 +94,24 @@ describe("full write cycle for /api/schedule/:id", () => {
     // endDatetime was not part of the PATCH body, so it must survive untouched.
     expect(patched.endDatetime).toBe("2026-06-01T15:00:00.000Z");
 
-    const [persisted] = await db.select().from(scheduleEntriesTable).where(eq(scheduleEntriesTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(scheduleEntriesTable)
+      .where(eq(scheduleEntriesTable.id, created.id));
     expect(persisted?.crewCount).toBe(5);
-    expect(persisted?.startDatetime.toISOString()).toBe("2026-06-02T08:00:00.000Z");
+    expect(persisted?.startDatetime.toISOString()).toBe(
+      "2026-06-02T08:00:00.000Z",
+    );
 
-    const deleteRes = await fetch(`${baseUrl}/api/schedule/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/schedule/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
-    const rowsAfterDelete = await db.select().from(scheduleEntriesTable).where(eq(scheduleEntriesTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(scheduleEntriesTable)
+      .where(eq(scheduleEntriesTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

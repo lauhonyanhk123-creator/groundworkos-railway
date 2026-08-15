@@ -52,7 +52,11 @@ describe("full write cycle for /api/clients/:id", () => {
     const createRes = await fetch(`${baseUrl}/api/clients`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyName: "Integration Test Ltd", contactName: "Ada Lovelace", email: "ada@example.com" }),
+      body: JSON.stringify({
+        companyName: "Integration Test Ltd",
+        contactName: "Ada Lovelace",
+        email: "ada@example.com",
+      }),
     });
     expect(createRes.status).toBe(201);
     const created = await createRes.json();
@@ -78,18 +82,26 @@ describe("full write cycle for /api/clients/:id", () => {
     const patched = await patchRes.json();
     expect(patched.companyName).toBe("Integration Test Holdings Ltd");
 
-    const [persisted] = await db.select().from(clientsTable).where(eq(clientsTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(clientsTable)
+      .where(eq(clientsTable.id, created.id));
     expect(persisted?.companyName).toBe("Integration Test Holdings Ltd");
     // contactName was not part of the PATCH body, so it must survive untouched.
     expect(persisted?.contactName).toBe("Ada Lovelace");
 
-    const deleteRes = await fetch(`${baseUrl}/api/clients/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/clients/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
     const getAfterDelete = await fetch(`${baseUrl}/api/clients/${created.id}`);
     expect(getAfterDelete.status).toBe(404);
 
-    const rowsAfterDelete = await db.select().from(clientsTable).where(eq(clientsTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(clientsTable)
+      .where(eq(clientsTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

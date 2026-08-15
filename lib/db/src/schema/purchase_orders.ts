@@ -16,9 +16,13 @@ export const purchaseOrdersTable = pgTable("purchase_orders", {
   expectedDelivery: date("expected_delivery", { mode: "string" }),
   deliveryDate: date("delivery_date", { mode: "string" }),
   notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrdersTable).omit({ createdAt: true });
+export const insertPurchaseOrderSchema = createInsertSchema(
+  purchaseOrdersTable,
+).omit({ createdAt: true });
 export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
 export type PurchaseOrderRow = typeof purchaseOrdersTable.$inferSelect;

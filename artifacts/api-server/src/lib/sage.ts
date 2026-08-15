@@ -20,7 +20,8 @@ const SAGE_API_BASE = "https://api.accounting.sage.com/v3.1";
 function creds() {
   const id = process.env.SAGE_CLIENT_ID;
   const secret = process.env.SAGE_CLIENT_SECRET;
-  if (!id || !secret) throw new Error("SAGE_CLIENT_ID / SAGE_CLIENT_SECRET not configured");
+  if (!id || !secret)
+    throw new Error("SAGE_CLIENT_ID / SAGE_CLIENT_SECRET not configured");
   return { id, secret };
 }
 
@@ -31,11 +32,13 @@ export async function getConnection() {
   return conn ?? null;
 }
 
-let refreshInFlight: Promise<typeof sageConnectionTable.$inferSelect> | null = null;
+let refreshInFlight: Promise<typeof sageConnectionTable.$inferSelect> | null =
+  null;
 
 async function refreshIfNeeded(conn: typeof sageConnectionTable.$inferSelect) {
   // Refresh 5 min before expiry
-  if (Date.now() < new Date(conn.expiresAt).getTime() - 5 * 60 * 1000) return conn;
+  if (Date.now() < new Date(conn.expiresAt).getTime() - 5 * 60 * 1000)
+    return conn;
 
   // Concurrent requests hitting an expired token share one refresh instead of
   // racing each other and clobbering the stored refresh token.
@@ -58,15 +61,25 @@ async function doRefresh(conn: typeof sageConnectionTable.$inferSelect) {
       client_secret: secret,
     }),
   });
-  if (!r.ok) throw new Error(`Sage token refresh failed: ${r.status} ${await r.text()}`);
+  if (!r.ok)
+    throw new Error(`Sage token refresh failed: ${r.status} ${await r.text()}`);
 
-  const t = (await r.json()) as { access_token: string; refresh_token: string; expires_in: number };
+  const t = (await r.json()) as {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  };
   const expiresAt = new Date(Date.now() + t.expires_in * 1000);
   const updatedAt = new Date();
 
   const [updated] = await db
     .update(sageConnectionTable)
-    .set({ accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt, updatedAt })
+    .set({
+      accessToken: t.access_token,
+      refreshToken: t.refresh_token,
+      expiresAt,
+      updatedAt,
+    })
     .where(eq(sageConnectionTable.id, conn.id))
     .returning();
   return updated;
@@ -123,16 +136,28 @@ export async function exchangeCode(code: string) {
       client_secret: secret,
     }),
   });
-  if (!r.ok) throw new Error(`Sage auth code exchange failed: ${r.status} ${await r.text()}`);
-  return r.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number }>;
+  if (!r.ok)
+    throw new Error(
+      `Sage auth code exchange failed: ${r.status} ${await r.text()}`,
+    );
+  return r.json() as Promise<{
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  }>;
 }
 
 export async function fetchBusiness(accessToken: string) {
   const r = await fetch(`${SAGE_API_BASE}/business`, {
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+    },
   });
   if (!r.ok) throw new Error(`Failed to fetch Sage business: ${r.status}`);
-  const data = (await r.json()) as { $items?: Array<{ id: string; name?: string }> };
+  const data = (await r.json()) as {
+    $items?: Array<{ id: string; name?: string }>;
+  };
   const first = data.$items?.[0];
   if (!first) throw new Error("No Sage business found for this account.");
   return { businessId: first.id, businessName: first.name ?? null };
@@ -168,7 +193,10 @@ export async function disconnect() {
 // ─── Contact sync ─────────────────────────────────────────────────────────────
 
 export async function syncContact(clientId: string) {
-  const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
+  const [client] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, clientId));
   if (!client) throw new Error(`Client ${clientId} not found`);
 
   const [existing] = await db
@@ -206,7 +234,11 @@ export async function syncContact(clientId: string) {
 
 export async function syncAllContacts() {
   const clients = await db.select().from(clientsTable);
-  return Promise.all(clients.map((c) => syncContact(c.id).catch((e) => ({ error: String(e), clientId: c.id }))));
+  return Promise.all(
+    clients.map((c) =>
+      syncContact(c.id).catch((e) => ({ error: String(e), clientId: c.id })),
+    ),
+  );
 }
 
 // ─── Invoice sync ─────────────────────────────────────────────────────────────
@@ -223,7 +255,10 @@ async function ensureContact(clientId: string | null) {
 }
 
 export async function syncInvoice(invoiceId: string) {
-  const [invoice] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId));
+  const [invoice] = await db
+    .select()
+    .from(invoicesTable)
+    .where(eq(invoicesTable.id, invoiceId));
   if (!invoice) throw new Error(`Invoice ${invoiceId} not found`);
 
   const sageContactId = await ensureContact(invoice.clientId);
@@ -251,14 +286,17 @@ export async function syncInvoice(invoiceId: string) {
   if (invoice.notes) salesInvoice.notes = invoice.notes;
 
   const method = existingMap ? "PUT" : "POST";
-  const path = existingMap ? `/sales_invoices/${existingMap.sageInvoiceId}` : "/sales_invoices";
+  const path = existingMap
+    ? `/sales_invoices/${existingMap.sageInvoiceId}`
+    : "/sales_invoices";
 
   const r = (await sageFetch(path, {
     method,
     body: JSON.stringify({ sales_invoice: salesInvoice }),
   })) as { id?: string; sales_invoice?: { id?: string } };
 
-  const sageInvoiceId = r.id ?? r.sales_invoice?.id ?? existingMap?.sageInvoiceId;
+  const sageInvoiceId =
+    r.id ?? r.sales_invoice?.id ?? existingMap?.sageInvoiceId;
   if (!sageInvoiceId) throw new Error("No invoice id returned from Sage");
 
   await db
@@ -274,13 +312,23 @@ export async function syncInvoice(invoiceId: string) {
 
 export async function syncAllInvoices() {
   const invoices = await db.select().from(invoicesTable);
-  return Promise.all(invoices.map((inv) => syncInvoice(inv.id).catch((e) => ({ error: String(e), invoiceId: inv.id }))));
+  return Promise.all(
+    invoices.map((inv) =>
+      syncInvoice(inv.id).catch((e) => ({
+        error: String(e),
+        invoiceId: inv.id,
+      })),
+    ),
+  );
 }
 
 // ─── Quote sync ───────────────────────────────────────────────────────────────
 
 export async function syncQuote(quoteId: string) {
-  const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+  const [quote] = await db
+    .select()
+    .from(quotesTable)
+    .where(eq(quotesTable.id, quoteId));
   if (!quote) throw new Error(`Quote ${quoteId} not found`);
 
   const lineItems = await db
@@ -298,8 +346,18 @@ export async function syncQuote(quoteId: string) {
 
   const lines =
     lineItems.length > 0
-      ? lineItems.map((li) => ({ description: li.description, quantity: li.quantity, unit_price: li.unitPrice }))
-      : [{ description: quote.title ?? `Quote ${quote.quoteNumber}`, quantity: 1, unit_price: quote.subtotal }];
+      ? lineItems.map((li) => ({
+          description: li.description,
+          quantity: li.quantity,
+          unit_price: li.unitPrice,
+        }))
+      : [
+          {
+            description: quote.title ?? `Quote ${quote.quoteNumber}`,
+            quantity: 1,
+            unit_price: quote.subtotal,
+          },
+        ];
 
   const sageQuote: Record<string, unknown> = {
     contact_id: sageContactId,
@@ -334,7 +392,11 @@ export async function syncQuote(quoteId: string) {
 
 export async function syncAllQuotes() {
   const quotes = await db.select().from(quotesTable);
-  return Promise.all(quotes.map((q) => syncQuote(q.id).catch((e) => ({ error: String(e), quoteId: q.id }))));
+  return Promise.all(
+    quotes.map((q) =>
+      syncQuote(q.id).catch((e) => ({ error: String(e), quoteId: q.id })),
+    ),
+  );
 }
 
 // ─── Pull payments from Sage ─────────────────────────────────────────────────
@@ -350,7 +412,10 @@ export async function pullPayments() {
     const statusId = r.sales_invoice?.status?.id;
     if (statusId !== "PAID") continue;
 
-    const [inv] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId));
+    const [inv] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoiceId));
     if (!inv || inv.status === "paid") continue;
     await db
       .update(invoicesTable)
