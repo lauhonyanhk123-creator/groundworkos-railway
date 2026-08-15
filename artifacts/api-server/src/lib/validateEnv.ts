@@ -12,6 +12,8 @@ const REQUIRED_ENV_VARS = [
   "S3_BUCKET",
   "S3_ACCESS_KEY_ID",
   "S3_SECRET_ACCESS_KEY",
+  "CLERK_PUBLISHABLE_KEY",
+  "CLERK_SECRET_KEY",
 ] as const;
 
 const missing = REQUIRED_ENV_VARS.filter((name) => !process.env[name]);
