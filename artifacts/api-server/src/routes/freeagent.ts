@@ -1,87 +1,27 @@
-import { Router } from "express";
-import crypto from "crypto";
 import * as freeagent from "../lib/freeagent.js";
 import { requireRole } from "../lib/auth.js";
+import { createAccountingOAuthRouter } from "./accountingOAuthFactory.js";
 
-const router = Router();
-
-const oauthStates = new Map<string, number>();
-
-function cleanStates() {
-  const cutoff = Date.now() - 10 * 60 * 1000;
-  for (const [k, t] of oauthStates) if (t < cutoff) oauthStates.delete(k);
-}
-
-router.get("/freeagent/status", requireRole("admin"), async (_req, res) => {
-  try {
-    const conn = await freeagent.getConnection();
-    if (!conn) return res.json({ connected: false });
-    return res.json({
-      connected: true,
-      companyName: conn.companyName,
-      connectedAt: conn.connectedAt,
-      updatedAt: conn.updatedAt,
-    });
-  } catch (err) {
-    return res.status(500).json({ error: String(err) });
-  }
-});
-
-router.get("/freeagent/auth", requireRole("admin"), (req, res) => {
-  try {
-    cleanStates();
-    const state = crypto.randomBytes(16).toString("hex");
-    oauthStates.set(state, Date.now());
-    res.redirect(freeagent.buildAuthUrl(state));
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Configuration error";
-    res
-      .status(500)
-      .send(
-        `FreeAgent not configured: ${msg}. Please set FREEAGENT_CLIENT_ID, FREEAGENT_CLIENT_SECRET, and FREEAGENT_REDIRECT_URI.`,
-      );
-  }
-});
-
-router.get("/freeagent/callback", async (req, res) => {
-  const { code, state, error } = req.query as Record<string, string>;
-
-  if (error) {
-    return res.redirect(
-      `/settings?freeagent=error&msg=${encodeURIComponent(error)}`,
-    );
-  }
-  if (!state || !oauthStates.has(state)) {
-    return res
-      .status(400)
-      .send("Invalid OAuth state — please try connecting again.");
-  }
-  oauthStates.delete(state);
-
-  try {
+const router = createAccountingOAuthRouter({
+  provider: "freeagent",
+  displayName: "FreeAgent",
+  envVars: {
+    clientId: "FREEAGENT_CLIENT_ID",
+    clientSecret: "FREEAGENT_CLIENT_SECRET",
+    redirectUri: "FREEAGENT_REDIRECT_URI",
+  },
+  buildAuthUrl: freeagent.buildAuthUrl,
+  getConnection: freeagent.getConnection,
+  disconnect: freeagent.disconnect,
+  statusFields: (conn) => ({ companyName: conn.companyName }),
+  completeConnection: async (code) => {
     const tokens = await freeagent.exchangeCode(code);
     const companyName = await freeagent.fetchCompanyName(tokens.access_token);
     await freeagent.storeConnection(tokens, companyName);
-
-    res.redirect("/settings?freeagent=connected");
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    res.redirect(`/settings?freeagent=error&msg=${encodeURIComponent(msg)}`);
-  }
+  },
 });
 
-router.delete(
-  "/freeagent/disconnect",
-  requireRole("admin"),
-  async (_req, res) => {
-    try {
-      await freeagent.disconnect();
-      res.json({ disconnected: true });
-    } catch (err) {
-      res.status(500).json({ error: String(err) });
-    }
-  },
-);
+// ─── Sync endpoints ───────────────────────────────────────────────────────────
 
 router.post(
   "/freeagent/sync/contacts",

@@ -1,64 +1,21 @@
-import { Router } from "express";
-import crypto from "crypto";
 import * as quickbooks from "../lib/quickbooks.js";
 import { requireRole } from "../lib/auth.js";
+import { createAccountingOAuthRouter } from "./accountingOAuthFactory.js";
 
-const router = Router();
-
-const oauthStates = new Map<string, number>();
-
-function cleanStates() {
-  const cutoff = Date.now() - 10 * 60 * 1000;
-  for (const [k, t] of oauthStates) if (t < cutoff) oauthStates.delete(k);
-}
-
-router.get("/quickbooks/status", requireRole("admin"), async (_req, res) => {
-  try {
-    const conn = await quickbooks.getConnection();
-    if (!conn) return res.json({ connected: false });
-    return res.json({
-      connected: true,
-      companyName: conn.companyName,
-      connectedAt: conn.connectedAt,
-      updatedAt: conn.updatedAt,
-    });
-  } catch (err) {
-    return res.status(500).json({ error: String(err) });
-  }
-});
-
-router.get("/quickbooks/auth", requireRole("admin"), (req, res) => {
-  try {
-    cleanStates();
-    const state = crypto.randomBytes(16).toString("hex");
-    oauthStates.set(state, Date.now());
-    res.redirect(quickbooks.buildAuthUrl(state));
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Configuration error";
-    res
-      .status(500)
-      .send(
-        `QuickBooks not configured: ${msg}. Please set QUICKBOOKS_CLIENT_ID, QUICKBOOKS_CLIENT_SECRET, and QUICKBOOKS_REDIRECT_URI.`,
-      );
-  }
-});
-
-router.get("/quickbooks/callback", async (req, res) => {
-  const { code, state, error, realmId } = req.query as Record<string, string>;
-
-  if (error) {
-    return res.redirect(
-      `/settings?quickbooks=error&msg=${encodeURIComponent(error)}`,
-    );
-  }
-  if (!state || !oauthStates.has(state)) {
-    return res
-      .status(400)
-      .send("Invalid OAuth state — please try connecting again.");
-  }
-  oauthStates.delete(state);
-
-  try {
+const router = createAccountingOAuthRouter({
+  provider: "quickbooks",
+  displayName: "QuickBooks",
+  envVars: {
+    clientId: "QUICKBOOKS_CLIENT_ID",
+    clientSecret: "QUICKBOOKS_CLIENT_SECRET",
+    redirectUri: "QUICKBOOKS_REDIRECT_URI",
+  },
+  buildAuthUrl: quickbooks.buildAuthUrl,
+  getConnection: quickbooks.getConnection,
+  disconnect: quickbooks.disconnect,
+  statusFields: (conn) => ({ companyName: conn.companyName }),
+  completeConnection: async (code, query) => {
+    const { realmId } = query;
     if (!realmId) throw new Error("No QuickBooks company (realmId) returned.");
     const tokens = await quickbooks.exchangeCode(code);
     const companyName = await quickbooks.fetchCompanyName(
@@ -66,26 +23,10 @@ router.get("/quickbooks/callback", async (req, res) => {
       realmId,
     );
     await quickbooks.storeConnection(tokens, realmId, companyName);
-
-    res.redirect("/settings?quickbooks=connected");
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    res.redirect(`/settings?quickbooks=error&msg=${encodeURIComponent(msg)}`);
-  }
+  },
 });
 
-router.delete(
-  "/quickbooks/disconnect",
-  requireRole("admin"),
-  async (_req, res) => {
-    try {
-      await quickbooks.disconnect();
-      res.json({ disconnected: true });
-    } catch (err) {
-      res.status(500).json({ error: String(err) });
-    }
-  },
-);
+// ─── Sync endpoints ───────────────────────────────────────────────────────────
 
 router.post(
   "/quickbooks/sync/contacts",
