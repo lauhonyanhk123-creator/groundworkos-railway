@@ -22,7 +22,9 @@ vi.mock("@clerk/express", () => ({
   clerkClient: {
     users: {
       getUser: vi.fn().mockResolvedValue({ publicMetadata: { role: "admin" } }),
-      getUserList: vi.fn().mockResolvedValue({ data: [{ publicMetadata: { role: "admin" } }] }),
+      getUserList: vi
+        .fn()
+        .mockResolvedValue({ data: [{ publicMetadata: { role: "admin" } }] }),
     },
   },
 }));
@@ -77,7 +79,9 @@ describe("PUT /api/settings/company bootstrap gating", () => {
     // adminExists() === false makes the route call next() and skip
     // requireRole entirely, so no getUser override is queued here — one
     // would sit unconsumed and leak into a later test's request.
-    vi.mocked(clerkClient.users.getUserList).mockResolvedValueOnce({ data: [] } as any);
+    vi.mocked(clerkClient.users.getUserList).mockResolvedValueOnce({
+      data: [],
+    } as any);
 
     const res = await fetch(`${baseUrl}/api/settings/company`, {
       method: "PUT",
@@ -88,8 +92,13 @@ describe("PUT /api/settings/company bootstrap gating", () => {
     const body = await res.json();
     expect(body.ok).toBe(true);
 
-    const [persisted] = await db.select().from(companySettingsTable).where(eq(companySettingsTable.id, 1));
-    expect((persisted?.data as any)?.companyName).toBe("Bootstrap Onboarding Ltd");
+    const [persisted] = await db
+      .select()
+      .from(companySettingsTable)
+      .where(eq(companySettingsTable.id, 1));
+    expect((persisted?.data as any)?.companyName).toBe(
+      "Bootstrap Onboarding Ltd",
+    );
   });
 });
 
@@ -98,7 +107,10 @@ describe("full write cycle for PUT /api/settings/company", () => {
     const firstPut = await fetch(`${baseUrl}/api/settings/company`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ companyName: "GroundworkOS Ltd", vatNumber: "GB 123 4567 89" }),
+      body: JSON.stringify({
+        companyName: "GroundworkOS Ltd",
+        vatNumber: "GB 123 4567 89",
+      }),
     });
     expect(firstPut.status).toBe(200);
 
@@ -124,8 +136,13 @@ describe("full write cycle for PUT /api/settings/company", () => {
     expect(afterSecond.companyName).toBe("GroundworkOS Holdings Ltd");
     expect(afterSecond.vatNumber).toBeUndefined();
 
-    const [persisted] = await db.select().from(companySettingsTable).where(eq(companySettingsTable.id, 1));
-    expect((persisted?.data as any)?.companyName).toBe("GroundworkOS Holdings Ltd");
+    const [persisted] = await db
+      .select()
+      .from(companySettingsTable)
+      .where(eq(companySettingsTable.id, 1));
+    expect((persisted?.data as any)?.companyName).toBe(
+      "GroundworkOS Holdings Ltd",
+    );
     expect((persisted?.data as any)?.vatNumber).toBeUndefined();
   });
 });

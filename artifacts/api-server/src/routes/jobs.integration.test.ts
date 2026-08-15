@@ -54,13 +54,17 @@ describe("POST /api/jobs", () => {
     // the suite happens to run in.
     const year = new Date().getFullYear();
 
-    const seededJobs = await db.select({ jobNumber: jobsTable.jobNumber }).from(jobsTable);
+    const seededJobs = await db
+      .select({ jobNumber: jobsTable.jobNumber })
+      .from(jobsTable);
     // Sanity check: this test is only meaningful against a seeded database.
     expect(seededJobs.length).toBeGreaterThan(0);
     // Sanity check: the seeded rows must actually land in the current
     // year's bucket, otherwise the collision this test guards against
     // can't happen and the assertions below would pass vacuously.
-    expect(seededJobs.some((j) => j.jobNumber.startsWith(`GW-${year}-`))).toBe(true);
+    expect(seededJobs.some((j) => j.jobNumber.startsWith(`GW-${year}-`))).toBe(
+      true,
+    );
     const seededNumbers = new Set(seededJobs.map((j) => j.jobNumber));
 
     const res = await fetch(`${baseUrl}/api/jobs`, {
@@ -75,7 +79,10 @@ describe("POST /api/jobs", () => {
     expect(job.jobNumber).toMatch(new RegExp(`^GW-${year}-\\d+$`));
     expect(seededNumbers.has(job.jobNumber)).toBe(false);
 
-    const rows = await db.select().from(jobsTable).where(eq(jobsTable.jobNumber, job.jobNumber));
+    const rows = await db
+      .select()
+      .from(jobsTable)
+      .where(eq(jobsTable.jobNumber, job.jobNumber));
     expect(rows).toHaveLength(1);
   });
 });
@@ -85,7 +92,11 @@ describe("full write cycle for /api/jobs/:id", () => {
     const createRes = await fetch(`${baseUrl}/api/jobs`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: "Integration cycle job", status: "enquiry", value: 1000 }),
+      body: JSON.stringify({
+        title: "Integration cycle job",
+        status: "enquiry",
+        value: 1000,
+      }),
     });
     expect(createRes.status).toBe(201);
     const created = await createRes.json();
@@ -109,17 +120,25 @@ describe("full write cycle for /api/jobs/:id", () => {
     expect(patched.status).toBe("active");
     expect(patched.progressPercent).toBe(40);
 
-    const [persisted] = await db.select().from(jobsTable).where(eq(jobsTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(jobsTable)
+      .where(eq(jobsTable.id, created.id));
     expect(persisted?.status).toBe("active");
     expect(persisted?.progressPercent).toBe(40);
 
-    const deleteRes = await fetch(`${baseUrl}/api/jobs/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/jobs/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
     const getAfterDelete = await fetch(`${baseUrl}/api/jobs/${created.id}`);
     expect(getAfterDelete.status).toBe(404);
 
-    const rowsAfterDelete = await db.select().from(jobsTable).where(eq(jobsTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(jobsTable)
+      .where(eq(jobsTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

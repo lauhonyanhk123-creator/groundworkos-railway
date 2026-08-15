@@ -64,7 +64,11 @@ describe("POST /api/purchase-orders sequence numbering", () => {
       fetch(`${baseUrl}/api/purchase-orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ supplier: "Integration Supplier Ltd", description: "Test order", orderDate: "2026-06-01" }),
+        body: JSON.stringify({
+          supplier: "Integration Supplier Ltd",
+          description: "Test order",
+          orderDate: "2026-06-01",
+        }),
       });
 
     const firstRes = await makePO();
@@ -95,7 +99,12 @@ describe("POST /api/purchase-orders financial computation", () => {
     const res = await fetch(`${baseUrl}/api/purchase-orders`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ supplier: "Integration Supplier Ltd", description: "Materials", orderDate: "2026-06-01", amount: 500 }),
+      body: JSON.stringify({
+        supplier: "Integration Supplier Ltd",
+        description: "Materials",
+        orderDate: "2026-06-01",
+        amount: 500,
+      }),
     });
     expect(res.status).toBe(201);
     const po = await res.json();
@@ -131,11 +140,14 @@ describe("full write cycle for /api/purchase-orders/:id", () => {
     expect(fetched).toBeTruthy();
     expect(fetched.supplier).toBe("Cycle Supplier Ltd");
 
-    const patchRes = await fetch(`${baseUrl}/api/purchase-orders/${created.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: 1000, status: "ordered" }),
-    });
+    const patchRes = await fetch(
+      `${baseUrl}/api/purchase-orders/${created.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: 1000, status: "ordered" }),
+      },
+    );
     expect(patchRes.status).toBe(200);
     const patched = await patchRes.json();
     expect(patched.status).toBe("ordered");
@@ -143,15 +155,24 @@ describe("full write cycle for /api/purchase-orders/:id", () => {
     expect(patched.vatAmount).toBe(200);
     expect(patched.totalAmount).toBe(1200);
 
-    const [persisted] = await db.select().from(purchaseOrdersTable).where(eq(purchaseOrdersTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(purchaseOrdersTable)
+      .where(eq(purchaseOrdersTable.id, created.id));
     expect(persisted?.amount).toBe(1000);
     expect(persisted?.totalAmount).toBe(1200);
     expect(persisted?.status).toBe("ordered");
 
-    const deleteRes = await fetch(`${baseUrl}/api/purchase-orders/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(
+      `${baseUrl}/api/purchase-orders/${created.id}`,
+      { method: "DELETE" },
+    );
     expect(deleteRes.status).toBe(204);
 
-    const rowsAfterDelete = await db.select().from(purchaseOrdersTable).where(eq(purchaseOrdersTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(purchaseOrdersTable)
+      .where(eq(purchaseOrdersTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

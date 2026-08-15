@@ -1,4 +1,12 @@
-import { pgTable, text, integer, boolean, real, date, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  integer,
+  boolean,
+  real,
+  date,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -18,9 +26,13 @@ export const plantTable = pgTable("plant", {
   notes: text("notes"),
   dailyRate: real("daily_rate"),
   owned: boolean("owned").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertPlantSchema = createInsertSchema(plantTable).omit({ createdAt: true });
+export const insertPlantSchema = createInsertSchema(plantTable).omit({
+  createdAt: true,
+});
 export type InsertPlant = z.infer<typeof insertPlantSchema>;
 export type Plant = typeof plantTable.$inferSelect;

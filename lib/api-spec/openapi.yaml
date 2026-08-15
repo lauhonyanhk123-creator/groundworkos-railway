@@ -791,7 +791,18 @@ components:
 
     DashboardStats:
       type: object
-      required: [activeJobs, outstandingAmount, pendingQuotes, docAlerts, overdueInvoices, totalJobValue, revenuePaid, activeSubcons, plantCount]
+      required:
+        [
+          activeJobs,
+          outstandingAmount,
+          pendingQuotes,
+          docAlerts,
+          overdueInvoices,
+          totalJobValue,
+          revenuePaid,
+          activeSubcons,
+          plantCount,
+        ]
       properties:
         activeJobs: { type: integer }
         outstandingAmount: { type: number }
@@ -847,7 +858,16 @@ components:
     # ── JOB ─────────────────────────────────────────────────────────────────
     JobRecord:
       type: object
-      required: [id, jobNumber, title, status, progressPercent, nrswaRequired, createdAt]
+      required:
+        [
+          id,
+          jobNumber,
+          title,
+          status,
+          progressPercent,
+          nrswaRequired,
+          createdAt,
+        ]
       properties:
         id: { type: string }
         jobNumber: { type: string }
@@ -922,7 +942,17 @@ components:
 
     QuoteRecord:
       type: object
-      required: [id, quoteNumber, status, subtotal, vatAmount, totalAmount, createdAt, lineItems]
+      required:
+        [
+          id,
+          quoteNumber,
+          status,
+          subtotal,
+          vatAmount,
+          totalAmount,
+          createdAt,
+          lineItems,
+        ]
       properties:
         id: { type: string }
         quoteNumber: { type: string }
@@ -984,7 +1014,17 @@ components:
     # ── INVOICE ─────────────────────────────────────────────────────────────
     InvoiceRecord:
       type: object
-      required: [id, invoiceNumber, status, subtotal, vatAmount, totalAmount, issuedDate, createdAt]
+      required:
+        [
+          id,
+          invoiceNumber,
+          status,
+          subtotal,
+          vatAmount,
+          totalAmount,
+          issuedDate,
+          createdAt,
+        ]
       properties:
         id: { type: string }
         invoiceNumber: { type: string }
@@ -1040,7 +1080,8 @@ components:
     # ── SUBCONTRACTOR ───────────────────────────────────────────────────────
     SubcontractorRecord:
       type: object
-      required: [id, companyName, cisStatus, cisDeductionRate, active, createdAt]
+      required:
+        [id, companyName, cisStatus, cisDeductionRate, active, createdAt]
       properties:
         id: { type: string }
         companyName: { type: string }
@@ -1148,7 +1189,8 @@ components:
     # ── SCHEDULE ────────────────────────────────────────────────────────────
     ScheduleEntryRecord:
       type: object
-      required: [id, title, startDatetime, endDatetime, crewCount, type, createdAt]
+      required:
+        [id, title, startDatetime, endDatetime, crewCount, type, createdAt]
       properties:
         id: { type: string }
         jobId: { type: ["string", "null"] }
@@ -1257,7 +1299,18 @@ components:
     # ── RATE BOOK ───────────────────────────────────────────────────────────
     RateBookRecord:
       type: object
-      required: [id, category, description, unit, labourRate, materialRate, plantRate, totalRate, createdAt]
+      required:
+        [
+          id,
+          category,
+          description,
+          unit,
+          labourRate,
+          materialRate,
+          plantRate,
+          totalRate,
+          createdAt,
+        ]
       properties:
         id: { type: string }
         category: { type: string }

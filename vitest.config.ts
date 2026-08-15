@@ -4,6 +4,11 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["**/src/**/*.test.ts"],
-    exclude: ["**/node_modules/**", "**/dist/**", "**/build/**", "**/src/**/*.integration.test.ts"],
+    exclude: [
+      "**/node_modules/**",
+      "**/dist/**",
+      "**/build/**",
+      "**/src/**/*.integration.test.ts",
+    ],
   },
 });

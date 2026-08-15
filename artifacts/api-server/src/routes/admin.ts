@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { clerkClient } from "@clerk/express";
-import { isRole, isUnsetOrAdmin, hasExplicitNonAdminRole } from "@workspace/shared-role";
+import {
+  isRole,
+  isUnsetOrAdmin,
+  hasExplicitNonAdminRole,
+} from "@workspace/shared-role";
 
 const router = Router();
 
@@ -42,8 +46,8 @@ async function requireAdmin(req: any, res: any): Promise<boolean> {
   }
   const user = await clerkClient.users.getUser(userId);
   // Users with no explicit role default to admin; only an explicitly-set
-// non-admin role is rejected here.
-const claimedRole = user.publicMetadata?.role as string | undefined;
+  // non-admin role is rejected here.
+  const claimedRole = user.publicMetadata?.role as string | undefined;
   if (hasExplicitNonAdminRole(claimedRole)) {
     res.status(403).json({ error: "Forbidden: admin role required" });
     return false;
@@ -65,11 +69,13 @@ router.get("/admin/users", async (req, res) => {
       role: (u.publicMetadata?.role as string) ?? "admin",
       imageUrl: u.imageUrl,
       createdAt: new Date(u.createdAt).toISOString(),
-      lastSignInAt: u.lastSignInAt ? new Date(u.lastSignInAt).toISOString() : null,
+      lastSignInAt: u.lastSignInAt
+        ? new Date(u.lastSignInAt).toISOString()
+        : null,
     }));
     res.json(users);
   } catch (err: any) {
-res.status(500).json({ error: err.message ?? "Failed to fetch users" });
+    res.status(500).json({ error: err.message ?? "Failed to fetch users" });
   }
 });
 
@@ -85,7 +91,9 @@ router.patch("/admin/users/:id/role", async (req, res) => {
     });
     return res.json({ ok: true });
   } catch (err: any) {
-return res.status(500).json({ error: err.message ?? "Failed to update role" });
+    return res
+      .status(500)
+      .json({ error: err.message ?? "Failed to update role" });
   }
 });
 
@@ -106,7 +114,9 @@ router.get("/admin/bootstrap-status", async (req, res) => {
   try {
     return res.json({ adminExists: await adminExists() });
   } catch (err: any) {
-return res.status(500).json({ error: err.message ?? "Failed to check admin status" });
+    return res
+      .status(500)
+      .json({ error: err.message ?? "Failed to check admin status" });
   }
 });
 
@@ -117,16 +127,19 @@ router.post("/admin/bootstrap", async (req, res) => {
   }
   try {
     if (await adminExists()) {
-      return res
-      .status(409)
-      .json({ error: "An admin already exists. Ask them to promote you from Settings > Users." });
+      return res.status(409).json({
+        error:
+          "An admin already exists. Ask them to promote you from Settings > Users.",
+      });
     }
     await clerkClient.users.updateUserMetadata(userId, {
       publicMetadata: { role: "admin" },
     });
     return res.json({ ok: true });
   } catch (err: any) {
-return res.status(500).json({ error: err.message ?? "Failed to bootstrap admin" });
+    return res
+      .status(500)
+      .json({ error: err.message ?? "Failed to bootstrap admin" });
   }
 });
 

@@ -64,7 +64,8 @@ export default function NotFound() {
             marginBottom: 28,
           }}
         >
-          This page doesn't exist, or you don't have access to it. Check the address, or head back to the dashboard.
+          This page doesn't exist, or you don't have access to it. Check the
+          address, or head back to the dashboard.
         </p>
 
         <Link

@@ -8,14 +8,14 @@ Manage jobs, CIS compliance, quotes, invoices, plant, subcontractors, timesheets
 
 ## Stack
 
-| Layer | Technology |
-|---|---|
+| Layer    | Technology                             |
+| -------- | -------------------------------------- |
 | Frontend | React 19 + Vite + Tailwind v4 + wouter |
-| Backend | Express v5 + TypeScript |
-| Database | PostgreSQL + Drizzle ORM |
-| Auth | Clerk |
-| Monorepo | pnpm workspaces |
-| Email | Resend |
+| Backend  | Express v5 + TypeScript                |
+| Database | PostgreSQL + Drizzle ORM               |
+| Auth     | Clerk                                  |
+| Monorepo | pnpm workspaces                        |
+| Email    | Resend                                 |
 
 ---
 
@@ -145,11 +145,11 @@ The frontend runs on port `5173` (or `$PORT` in production), the API server on `
 
 Roles are stored in Clerk `publicMetadata.role`. Set via the **Settings → Users** page (admin only) or directly in the Clerk dashboard.
 
-| Role | Access |
-|---|---|
-| `admin` | Full access including Users, Audit Log, Deploy Guide |
+| Role      | Access                                                              |
+| --------- | ------------------------------------------------------------------- |
+| `admin`   | Full access including Users, Audit Log, Deploy Guide                |
 | `manager` | All operational features: jobs, quotes, invoices, reports, settings |
-| `foreman` | Dashboard, jobs, schedule, timesheets |
+| `foreman` | Dashboard, jobs, schedule, timesheets                               |
 
 **First-time setup:** Set your own account to `admin` via the Clerk dashboard before logging in.
 
@@ -196,7 +196,7 @@ A few non-obvious design decisions and gotchas worth knowing before making chang
 
 **API data shape** — The database and API layer use camelCase (Drizzle convention), while the frontend's `types.ts` uses snake_case throughout. The bridge between them lives in `artifacts/groundworkos/src/lib/apiTransforms.ts`, called from `artifacts/groundworkos/src/store/DataLoader.tsx`. Any new field added to the schema needs a matching entry in the transform layer or it won't reach the frontend.
 
-**Data integrity rule** — Never persist a client-supplied id as a database primary key on create/edit endpoints; generate ids server-side instead. A shared default-form object that baked in a single client-generated id at module load time once caused every *second* record of a given type to silently fail to save (a primary-key collision on the second insert). Client-side temporary ids should only ever be used as React keys, never sent to the database as the row's identity.
+**Data integrity rule** — Never persist a client-supplied id as a database primary key on create/edit endpoints; generate ids server-side instead. A shared default-form object that baked in a single client-generated id at module load time once caused every _second_ record of a given type to silently fail to save (a primary-key collision on the second insert). Client-side temporary ids should only ever be used as React keys, never sent to the database as the row's identity.
 
 **UI loading state** — Pages read from a shared app-wide store that starts empty; a single loading gate in the main layout (driven by the core list queries: clients/jobs/quotes/invoices) blocks rendering until the first load completes, so no page can flash a false "no results" state. If a new top-level dataset becomes something a page depends on for its first paint, add it to that gate's condition.
 

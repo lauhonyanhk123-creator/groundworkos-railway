@@ -89,14 +89,22 @@ describe("full write cycle for /api/plant/:id", () => {
     // still reflect the job set at create time.
     expect(patched.currentJobTitle).toBe(job!.title);
 
-    const [persisted] = await db.select().from(plantTable).where(eq(plantTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(plantTable)
+      .where(eq(plantTable.id, created.id));
     expect(persisted?.status).toBe("maintenance");
     expect(persisted?.dailyRate).toBe(300);
 
-    const deleteRes = await fetch(`${baseUrl}/api/plant/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/plant/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
-    const rowsAfterDelete = await db.select().from(plantTable).where(eq(plantTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(plantTable)
+      .where(eq(plantTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

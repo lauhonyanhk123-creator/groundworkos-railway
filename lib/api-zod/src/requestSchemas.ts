@@ -2,19 +2,20 @@
  * Hand-written request-body validation schemas.
  *
  * Unlike ./generated/api.ts (orval-generated from the OpenAPI spec, and not
-                               * always in sync with the live Drizzle schema/route behavior), these schemas
+ * always in sync with the live Drizzle schema/route behavior), these schemas
  * describe exactly what a client is allowed to send in the body of a
  * mutating (POST/PUT/PATCH) request. They intentionally:
  *  - omit server-generated fields (id, sequence numbers like jobNumber/
-                                     *    invoiceNumber/quoteNumber/poNumber)
+ *    invoiceNumber/quoteNumber/poNumber)
  *  - omit server-computed/enrichment-only fields (totals, VAT, CIS
-                                                    *    deduction, joined-in names like clientName/jobTitle/currentJobTitle)
+ *    deduction, joined-in names like clientName/jobTitle/currentJobTitle)
  *  - use `.strict()` so unrecognized/extra fields are rejected with a 400
  *    instead of being silently ignored or (worse) written to the database.
  */
 import { z } from "zod";
 
-export const CreateClientInput = z.object({
+export const CreateClientInput = z
+  .object({
     companyName: z.string(),
     contactName: z.string().optional(),
     email: z.string().optional(),
@@ -22,9 +23,11 @@ export const CreateClientInput = z.object({
     address: z.string().optional(),
     vatNumber: z.string().optional(),
     notes: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateClientInput = z.object({
+export const UpdateClientInput = z
+  .object({
     companyName: z.string().optional(),
     contactName: z.string().optional(),
     email: z.string().optional(),
@@ -32,9 +35,11 @@ export const UpdateClientInput = z.object({
     address: z.string().optional(),
     vatNumber: z.string().optional(),
     notes: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const CreateJobInput = z.object({
+export const CreateJobInput = z
+  .object({
     title: z.string(),
     clientId: z.string().optional(),
     type: z.string().optional(),
@@ -49,9 +54,11 @@ export const CreateJobInput = z.object({
     crewCount: z.number().optional(),
     nrswaRequired: z.boolean().optional(),
     permitNumber: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateJobInput = z.object({
+export const UpdateJobInput = z
+  .object({
     title: z.string().optional(),
     clientId: z.string().optional(),
     type: z.string().optional(),
@@ -66,18 +73,22 @@ export const UpdateJobInput = z.object({
     crewCount: z.number().optional(),
     nrswaRequired: z.boolean().optional(),
     permitNumber: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
 // Line items are always re-priced server-side from quantity * unitPrice, so
 // `id`, `quoteId` and `total` are never accepted from the client.
-export const QuoteLineItemInput = z.object({
+export const QuoteLineItemInput = z
+  .object({
     description: z.string(),
     quantity: z.number().optional(),
     unit: z.string().optional(),
     unitPrice: z.number().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const CreateQuoteInput = z.object({
+export const CreateQuoteInput = z
+  .object({
     clientId: z.string().optional(),
     jobId: z.string().optional(),
     title: z.string().optional(),
@@ -85,9 +96,11 @@ export const CreateQuoteInput = z.object({
     validUntil: z.string().optional(),
     notes: z.string().optional(),
     lineItems: z.array(QuoteLineItemInput).optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateQuoteInput = z.object({
+export const UpdateQuoteInput = z
+  .object({
     clientId: z.string().optional(),
     jobId: z.string().optional(),
     title: z.string().optional(),
@@ -96,12 +109,14 @@ export const UpdateQuoteInput = z.object({
     notes: z.string().optional(),
     sentAt: z.string().optional(),
     lineItems: z.array(QuoteLineItemInput).optional(),
-  }).strict();
+  })
+  .strict();
 
 // subtotal/vatAmount/totalAmount/cisDeduction are always recomputed
 // server-side (see computeFinancials in routes/invoices.ts) and must never
 // be accepted from the client.
-export const CreateInvoiceInput = z.object({
+export const CreateInvoiceInput = z
+  .object({
     clientId: z.string().optional(),
     jobId: z.string().optional(),
     quoteId: z.string().optional(),
@@ -112,9 +127,11 @@ export const CreateInvoiceInput = z.object({
     dueDate: z.string().optional(),
     paidAt: z.string().optional(),
     notes: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateInvoiceInput = z.object({
+export const UpdateInvoiceInput = z
+  .object({
     clientId: z.string().optional(),
     jobId: z.string().optional(),
     quoteId: z.string().optional(),
@@ -125,12 +142,14 @@ export const UpdateInvoiceInput = z.object({
     dueDate: z.string().optional(),
     paidAt: z.string().optional(),
     notes: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
 // Note: routes/subcontractors.ts additionally restricts cisStatus,
 // cisDeductionRate and utrNumber to admin-only *after* this shape/type
 // validation runs — that RBAC filtering is unchanged by this schema.
-export const CreateSubcontractorInput = z.object({
+export const CreateSubcontractorInput = z
+  .object({
     companyName: z.string(),
     contactName: z.string().optional(),
     email: z.string().optional(),
@@ -146,9 +165,11 @@ export const CreateSubcontractorInput = z.object({
     address: z.string().optional(),
     notes: z.string().optional(),
     active: z.boolean().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateSubcontractorInput = z.object({
+export const UpdateSubcontractorInput = z
+  .object({
     companyName: z.string().optional(),
     contactName: z.string().optional(),
     email: z.string().optional(),
@@ -164,13 +185,15 @@ export const UpdateSubcontractorInput = z.object({
     address: z.string().optional(),
     notes: z.string().optional(),
     active: z.boolean().optional(),
-  }).strict();
+  })
+  .strict();
 
 // `status` is always server-computed on create (see computeDocStatus in
-                                                 // routes/documents.ts), so it is intentionally omitted from the create
+// routes/documents.ts), so it is intentionally omitted from the create
 // input. On update it is only recomputed when expiryDate changes, so it
 // remains accepted there to preserve existing passthrough behavior.
-export const CreateDocumentInput = z.object({
+export const CreateDocumentInput = z
+  .object({
     name: z.string(),
     type: z.string(),
     expiryDate: z.string().optional(),
@@ -180,9 +203,11 @@ export const CreateDocumentInput = z.object({
     relatedName: z.string().optional(),
     notes: z.string().optional(),
     filePath: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateDocumentInput = z.object({
+export const UpdateDocumentInput = z
+  .object({
     name: z.string().optional(),
     type: z.string().optional(),
     status: z.string().optional(),
@@ -193,9 +218,11 @@ export const UpdateDocumentInput = z.object({
     relatedName: z.string().optional(),
     notes: z.string().optional(),
     filePath: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const CreatePlantInput = z.object({
+export const CreatePlantInput = z
+  .object({
     name: z.string(),
     registration: z.string().optional(),
     category: z.string(),
@@ -210,9 +237,11 @@ export const CreatePlantInput = z.object({
     notes: z.string().optional(),
     dailyRate: z.number().optional(),
     owned: z.boolean().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdatePlantInput = z.object({
+export const UpdatePlantInput = z
+  .object({
     name: z.string().optional(),
     registration: z.string().optional(),
     category: z.string().optional(),
@@ -227,11 +256,13 @@ export const UpdatePlantInput = z.object({
     notes: z.string().optional(),
     dailyRate: z.number().optional(),
     owned: z.boolean().optional(),
-  }).strict();
+  })
+  .strict();
 
 // `cost` is always derived server-side from hoursWorked/dayRate, so it is
 // never accepted from the client on either create or update.
-export const CreateTimesheetInput = z.object({
+export const CreateTimesheetInput = z
+  .object({
     jobId: z.string().optional(),
     workerName: z.string(),
     workDate: z.string(),
@@ -239,9 +270,11 @@ export const CreateTimesheetInput = z.object({
     dayRate: z.number().optional(),
     description: z.string().optional(),
     createdBy: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateTimesheetInput = z.object({
+export const UpdateTimesheetInput = z
+  .object({
     jobId: z.string().optional(),
     workerName: z.string().optional(),
     workDate: z.string().optional(),
@@ -249,9 +282,11 @@ export const UpdateTimesheetInput = z.object({
     dayRate: z.number().optional(),
     description: z.string().optional(),
     createdBy: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const CreatePurchaseOrderInput = z.object({
+export const CreatePurchaseOrderInput = z
+  .object({
     jobId: z.string().optional(),
     supplier: z.string(),
     description: z.string(),
@@ -263,9 +298,11 @@ export const CreatePurchaseOrderInput = z.object({
     expectedDelivery: z.string().optional(),
     deliveryDate: z.string().optional(),
     notes: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdatePurchaseOrderInput = z.object({
+export const UpdatePurchaseOrderInput = z
+  .object({
     jobId: z.string().optional(),
     supplier: z.string().optional(),
     description: z.string().optional(),
@@ -277,9 +314,11 @@ export const UpdatePurchaseOrderInput = z.object({
     expectedDelivery: z.string().optional(),
     deliveryDate: z.string().optional(),
     notes: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const CreateRateBookInput = z.object({
+export const CreateRateBookInput = z
+  .object({
     category: z.string(),
     description: z.string(),
     unit: z.string(),
@@ -288,9 +327,11 @@ export const CreateRateBookInput = z.object({
     plantRate: z.number().optional(),
     totalRate: z.number().optional(),
     notes: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateRateBookInput = z.object({
+export const UpdateRateBookInput = z
+  .object({
     category: z.string().optional(),
     description: z.string().optional(),
     unit: z.string().optional(),
@@ -299,9 +340,11 @@ export const UpdateRateBookInput = z.object({
     plantRate: z.number().optional(),
     totalRate: z.number().optional(),
     notes: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const CreateScheduleInput = z.object({
+export const CreateScheduleInput = z
+  .object({
     jobId: z.string().optional(),
     title: z.string(),
     startDatetime: z.string(),
@@ -311,9 +354,11 @@ export const CreateScheduleInput = z.object({
     foreman: z.string().optional(),
     notes: z.string().optional(),
     type: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
-export const UpdateScheduleInput = z.object({
+export const UpdateScheduleInput = z
+  .object({
     jobId: z.string().optional(),
     title: z.string().optional(),
     startDatetime: z.string().optional(),
@@ -323,27 +368,30 @@ export const UpdateScheduleInput = z.object({
     foreman: z.string().optional(),
     notes: z.string().optional(),
     type: z.string().optional(),
-  }).strict();
+  })
+  .strict();
 
 // The Settings page always PUTs the full merged CompanySettings object
 // (see SettingsPage.tsx's `save()` helper), but every field is kept
 // optional here defensively; unrecognized keys are still rejected.
-export const CompanySettingsInput = z.object({
-  companyName: z.string().optional(),
-  companyNumber: z.string().optional(),
-  vatNumber: z.string().optional(),
-  utrNumber: z.string().optional(),
-  cisReference: z.string().optional(),
-  address: z.string().optional(),
-  invoicePrefix: z.string().optional(),
-  quotePrefix: z.string().optional(),
-  jobPrefix: z.string().optional(),
-  paymentTerms: z.string().optional(),
-  streetWorksLicenceRef: z.string().optional(),
-  defaultPermitAuthority: z.string().optional(),
-  bankName: z.string().optional(),
-  sortCode: z.string().optional(),
-  accountNumber: z.string().optional(),
-  taxYearStart: z.string().optional(),
-  filingReminderDays: z.string().optional(),
-}).strict();
+export const CompanySettingsInput = z
+  .object({
+    companyName: z.string().optional(),
+    companyNumber: z.string().optional(),
+    vatNumber: z.string().optional(),
+    utrNumber: z.string().optional(),
+    cisReference: z.string().optional(),
+    address: z.string().optional(),
+    invoicePrefix: z.string().optional(),
+    quotePrefix: z.string().optional(),
+    jobPrefix: z.string().optional(),
+    paymentTerms: z.string().optional(),
+    streetWorksLicenceRef: z.string().optional(),
+    defaultPermitAuthority: z.string().optional(),
+    bankName: z.string().optional(),
+    sortCode: z.string().optional(),
+    accountNumber: z.string().optional(),
+    taxYearStart: z.string().optional(),
+    filingReminderDays: z.string().optional(),
+  })
+  .strict();

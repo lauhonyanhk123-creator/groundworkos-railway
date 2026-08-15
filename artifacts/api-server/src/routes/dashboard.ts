@@ -1,5 +1,12 @@
 import { Router } from "express";
-import { db, jobsTable, invoicesTable, documentsTable, subcontractorsTable, plantTable } from "@workspace/db";
+import {
+  db,
+  jobsTable,
+  invoicesTable,
+  documentsTable,
+  subcontractorsTable,
+  plantTable,
+} from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 
 const router = Router();
@@ -28,7 +35,9 @@ router.get("/dashboard", async (req, res) => {
     .from(documentsTable);
 
   const [subStats] = await db
-    .select({ activeSubcons: sql<number>`count(*) filter (where ${subcontractorsTable.active})::int` })
+    .select({
+      activeSubcons: sql<number>`count(*) filter (where ${subcontractorsTable.active})::int`,
+    })
     .from(subcontractorsTable);
 
   const [plantStats] = await db

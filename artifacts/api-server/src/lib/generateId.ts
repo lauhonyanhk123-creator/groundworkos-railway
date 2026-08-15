@@ -19,7 +19,7 @@ export function generateId(): string {
 export async function nextSeqNumber(
   tableName: string,
   prefix: string,
-  executor: Pick<typeof db, "execute"> = db
+  executor: Pick<typeof db, "execute"> = db,
 ): Promise<string> {
   const year = new Date().getFullYear();
   const key = `${tableName}:${year}`;

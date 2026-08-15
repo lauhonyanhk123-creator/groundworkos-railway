@@ -69,7 +69,11 @@ describe("POST /api/documents status derivation", () => {
     const res = await fetch(`${baseUrl}/api/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Lapsed insurance", type: "insurance", expiryDate: "2020-01-01" }),
+      body: JSON.stringify({
+        name: "Lapsed insurance",
+        type: "insurance",
+        expiryDate: "2020-01-01",
+      }),
     });
     expect(res.status).toBe(201);
     const doc = await res.json();
@@ -80,7 +84,11 @@ describe("POST /api/documents status derivation", () => {
     const res = await fetch(`${baseUrl}/api/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Soon-to-lapse permit", type: "permit", expiryDate: daysFromNow(10) }),
+      body: JSON.stringify({
+        name: "Soon-to-lapse permit",
+        type: "permit",
+        expiryDate: daysFromNow(10),
+      }),
     });
     expect(res.status).toBe(201);
     const doc = await res.json();
@@ -91,7 +99,11 @@ describe("POST /api/documents status derivation", () => {
     const res = await fetch(`${baseUrl}/api/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Far-future permit", type: "permit", expiryDate: daysFromNow(60) }),
+      body: JSON.stringify({
+        name: "Far-future permit",
+        type: "permit",
+        expiryDate: daysFromNow(60),
+      }),
     });
     expect(res.status).toBe(201);
     const doc = await res.json();
@@ -104,7 +116,11 @@ describe("full write cycle for /api/documents/:id", () => {
     const createRes = await fetch(`${baseUrl}/api/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: "Cycle document", type: "certification", expiryDate: daysFromNow(60) }),
+      body: JSON.stringify({
+        name: "Cycle document",
+        type: "certification",
+        expiryDate: daysFromNow(60),
+      }),
     });
     expect(createRes.status).toBe(201);
     const created = await createRes.json();
@@ -128,14 +144,22 @@ describe("full write cycle for /api/documents/:id", () => {
     const patched = await patchRes.json();
     expect(patched.status).toBe("expired");
 
-    const [persisted] = await db.select().from(documentsTable).where(eq(documentsTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(documentsTable)
+      .where(eq(documentsTable.id, created.id));
     expect(persisted?.status).toBe("expired");
     expect(persisted?.expiryDate).toBe("2020-01-01");
 
-    const deleteRes = await fetch(`${baseUrl}/api/documents/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/documents/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
-    const rowsAfterDelete = await db.select().from(documentsTable).where(eq(documentsTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(documentsTable)
+      .where(eq(documentsTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

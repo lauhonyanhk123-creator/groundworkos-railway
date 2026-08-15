@@ -85,14 +85,22 @@ describe("full write cycle for /api/rate-book/:id", () => {
     expect(patched.labourRate).toBe(20);
     expect(patched.totalRate).toBe(27);
 
-    const [persisted] = await db.select().from(rateBookTable).where(eq(rateBookTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(rateBookTable)
+      .where(eq(rateBookTable.id, created.id));
     expect(persisted?.labourRate).toBe(20);
     expect(persisted?.totalRate).toBe(27);
 
-    const deleteRes = await fetch(`${baseUrl}/api/rate-book/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/rate-book/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
-    const rowsAfterDelete = await db.select().from(rateBookTable).where(eq(rateBookTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(rateBookTable)
+      .where(eq(rateBookTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

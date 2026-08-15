@@ -54,9 +54,13 @@ describe("POST /api/quotes", () => {
     // the suite happens to run in.
     const year = new Date().getFullYear();
 
-    const seededQuotes = await db.select({ quoteNumber: quotesTable.quoteNumber }).from(quotesTable);
+    const seededQuotes = await db
+      .select({ quoteNumber: quotesTable.quoteNumber })
+      .from(quotesTable);
     expect(seededQuotes.length).toBeGreaterThan(0);
-    expect(seededQuotes.some((q) => q.quoteNumber.startsWith(`QT-${year}-`))).toBe(true);
+    expect(
+      seededQuotes.some((q) => q.quoteNumber.startsWith(`QT-${year}-`)),
+    ).toBe(true);
     const seededNumbers = new Set(seededQuotes.map((q) => q.quoteNumber));
 
     const res = await fetch(`${baseUrl}/api/quotes`, {
@@ -71,7 +75,10 @@ describe("POST /api/quotes", () => {
     expect(quote.quoteNumber).toMatch(new RegExp(`^QT-${year}-\\d+$`));
     expect(seededNumbers.has(quote.quoteNumber)).toBe(false);
 
-    const rows = await db.select().from(quotesTable).where(eq(quotesTable.quoteNumber, quote.quoteNumber));
+    const rows = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.quoteNumber, quote.quoteNumber));
     expect(rows).toHaveLength(1);
   });
 
@@ -82,8 +89,18 @@ describe("POST /api/quotes", () => {
       body: JSON.stringify({
         title: "Line item pricing quote",
         lineItems: [
-          { description: "Trench excavation", quantity: 10, unit: "m", unitPrice: 25 },
-          { description: "Site visit", quantity: 1, unit: "Item", unitPrice: 50 },
+          {
+            description: "Trench excavation",
+            quantity: 10,
+            unit: "m",
+            unitPrice: 25,
+          },
+          {
+            description: "Site visit",
+            quantity: 1,
+            unit: "Item",
+            unitPrice: 50,
+          },
         ],
       }),
     });
@@ -96,9 +113,15 @@ describe("POST /api/quotes", () => {
     expect(quote.totalAmount).toBe(360);
     expect(quote.lineItems).toHaveLength(2);
 
-    const persistedItems = await db.select().from(lineItemsTable).where(eq(lineItemsTable.quoteId, quote.id));
+    const persistedItems = await db
+      .select()
+      .from(lineItemsTable)
+      .where(eq(lineItemsTable.quoteId, quote.id));
     expect(persistedItems).toHaveLength(2);
-    expect(persistedItems.find((li) => li.description === "Trench excavation")?.total).toBe(250);
+    expect(
+      persistedItems.find((li) => li.description === "Trench excavation")
+        ?.total,
+    ).toBe(250);
   });
 
   it("defaults totals to zero when no line items are supplied", async () => {
@@ -124,7 +147,14 @@ describe("full write cycle for /api/quotes/:id", () => {
       body: JSON.stringify({
         title: "Cycle quote",
         status: "draft",
-        lineItems: [{ description: "Initial item", quantity: 2, unit: "No", unitPrice: 10 }],
+        lineItems: [
+          {
+            description: "Initial item",
+            quantity: 2,
+            unit: "No",
+            unitPrice: 10,
+          },
+        ],
       }),
     });
     expect(createRes.status).toBe(201);
@@ -143,7 +173,14 @@ describe("full write cycle for /api/quotes/:id", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         status: "sent",
-        lineItems: [{ description: "Replacement item", quantity: 4, unit: "No", unitPrice: 100 }],
+        lineItems: [
+          {
+            description: "Replacement item",
+            quantity: 4,
+            unit: "No",
+            unitPrice: 100,
+          },
+        ],
       }),
     });
     expect(patchRes.status).toBe(200);
@@ -155,26 +192,40 @@ describe("full write cycle for /api/quotes/:id", () => {
     expect(patched.lineItems).toHaveLength(1);
     expect(patched.lineItems[0].description).toBe("Replacement item");
 
-    const persistedItems = await db.select().from(lineItemsTable).where(eq(lineItemsTable.quoteId, created.id));
+    const persistedItems = await db
+      .select()
+      .from(lineItemsTable)
+      .where(eq(lineItemsTable.quoteId, created.id));
     expect(persistedItems).toHaveLength(1);
     expect(persistedItems[0]?.description).toBe("Replacement item");
 
-    const [persistedQuote] = await db.select().from(quotesTable).where(eq(quotesTable.id, created.id));
+    const [persistedQuote] = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.id, created.id));
     expect(persistedQuote?.status).toBe("sent");
     expect(persistedQuote?.subtotal).toBe(400);
 
-    const deleteRes = await fetch(`${baseUrl}/api/quotes/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/quotes/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
     const getAfterDelete = await fetch(`${baseUrl}/api/quotes/${created.id}`);
     expect(getAfterDelete.status).toBe(404);
 
-    const rowsAfterDelete = await db.select().from(quotesTable).where(eq(quotesTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(quotesTable)
+      .where(eq(quotesTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
 
     // The line items must be cascade-deleted along with the quote, not left
     // as orphaned rows referencing a quote that no longer exists.
-    const orphanedLineItems = await db.select().from(lineItemsTable).where(eq(lineItemsTable.quoteId, created.id));
+    const orphanedLineItems = await db
+      .select()
+      .from(lineItemsTable)
+      .where(eq(lineItemsTable.quoteId, created.id));
     expect(orphanedLineItems).toHaveLength(0);
   });
 });

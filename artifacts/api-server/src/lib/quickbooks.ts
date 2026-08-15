@@ -12,7 +12,8 @@ import {
 import { eq } from "drizzle-orm";
 
 const QB_AUTH_URL = "https://appcenter.intuit.com/connect/oauth2";
-const QB_TOKEN_URL = "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
+const QB_TOKEN_URL =
+  "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
 const QB_API_BASE = "https://quickbooks.api.intuit.com/v3/company";
 
 // ─── Credentials ────────────────────────────────────────────────────────────
@@ -20,7 +21,10 @@ const QB_API_BASE = "https://quickbooks.api.intuit.com/v3/company";
 function creds() {
   const id = process.env.QUICKBOOKS_CLIENT_ID;
   const secret = process.env.QUICKBOOKS_CLIENT_SECRET;
-  if (!id || !secret) throw new Error("QUICKBOOKS_CLIENT_ID / QUICKBOOKS_CLIENT_SECRET not configured");
+  if (!id || !secret)
+    throw new Error(
+      "QUICKBOOKS_CLIENT_ID / QUICKBOOKS_CLIENT_SECRET not configured",
+    );
   return { id, secret };
 }
 
@@ -36,11 +40,16 @@ export async function getConnection() {
   return conn ?? null;
 }
 
-let refreshInFlight: Promise<typeof quickbooksConnectionTable.$inferSelect> | null = null;
+let refreshInFlight: Promise<
+  typeof quickbooksConnectionTable.$inferSelect
+> | null = null;
 
-async function refreshIfNeeded(conn: typeof quickbooksConnectionTable.$inferSelect) {
+async function refreshIfNeeded(
+  conn: typeof quickbooksConnectionTable.$inferSelect,
+) {
   // Refresh 5 min before expiry
-  if (Date.now() < new Date(conn.expiresAt).getTime() - 5 * 60 * 1000) return conn;
+  if (Date.now() < new Date(conn.expiresAt).getTime() - 5 * 60 * 1000)
+    return conn;
 
   // Concurrent requests hitting an expired token share one refresh instead of
   // racing each other and clobbering the stored refresh token.
@@ -54,18 +63,37 @@ async function refreshIfNeeded(conn: typeof quickbooksConnectionTable.$inferSele
 async function doRefresh(conn: typeof quickbooksConnectionTable.$inferSelect) {
   const r = await fetch(QB_TOKEN_URL, {
     method: "POST",
-    headers: { Authorization: basicAuth(), "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: conn.refreshToken }),
+    headers: {
+      Authorization: basicAuth(),
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      refresh_token: conn.refreshToken,
+    }),
   });
-  if (!r.ok) throw new Error(`QuickBooks token refresh failed: ${r.status} ${await r.text()}`);
+  if (!r.ok)
+    throw new Error(
+      `QuickBooks token refresh failed: ${r.status} ${await r.text()}`,
+    );
 
-  const t = (await r.json()) as { access_token: string; refresh_token: string; expires_in: number };
+  const t = (await r.json()) as {
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  };
   const expiresAt = new Date(Date.now() + t.expires_in * 1000);
   const updatedAt = new Date();
 
   const [updated] = await db
     .update(quickbooksConnectionTable)
-    .set({ accessToken: t.access_token, refreshToken: t.refresh_token, expiresAt, updatedAt })
+    .set({
+      accessToken: t.access_token,
+      refreshToken: t.refresh_token,
+      expiresAt,
+      updatedAt,
+    })
     .where(eq(quickbooksConnectionTable.id, conn.id))
     .returning();
   return updated;
@@ -111,16 +139,34 @@ export async function exchangeCode(code: string) {
   if (!redirectUri) throw new Error("QUICKBOOKS_REDIRECT_URI not configured");
   const r = await fetch(QB_TOKEN_URL, {
     method: "POST",
-    headers: { Authorization: basicAuth(), "Content-Type": "application/x-www-form-urlencoded", Accept: "application/json" },
-    body: new URLSearchParams({ grant_type: "authorization_code", code, redirect_uri: redirectUri }),
+    headers: {
+      Authorization: basicAuth(),
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: redirectUri,
+    }),
   });
-  if (!r.ok) throw new Error(`QuickBooks auth code exchange failed: ${r.status} ${await r.text()}`);
-  return r.json() as Promise<{ access_token: string; refresh_token: string; expires_in: number }>;
+  if (!r.ok)
+    throw new Error(
+      `QuickBooks auth code exchange failed: ${r.status} ${await r.text()}`,
+    );
+  return r.json() as Promise<{
+    access_token: string;
+    refresh_token: string;
+    expires_in: number;
+  }>;
 }
 
 export async function fetchCompanyName(accessToken: string, realmId: string) {
   const r = await fetch(`${QB_API_BASE}/${realmId}/companyinfo/${realmId}`, {
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+    },
   });
   if (!r.ok) return null;
   const data = (await r.json()) as { CompanyInfo?: { CompanyName?: string } };
@@ -157,7 +203,10 @@ export async function disconnect() {
 // ─── Contact sync ─────────────────────────────────────────────────────────────
 
 export async function syncContact(clientId: string) {
-  const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, clientId));
+  const [client] = await db
+    .select()
+    .from(clientsTable)
+    .where(eq(clientsTable.id, clientId));
   if (!client) throw new Error(`Client ${clientId} not found`);
 
   const [existing] = await db
@@ -167,7 +216,9 @@ export async function syncContact(clientId: string) {
 
   const customer: Record<string, unknown> = { DisplayName: client.companyName };
   if (existing) {
-    const current = (await qbFetch(`/customer/${existing.quickbooksCustomerId}`)) as {
+    const current = (await qbFetch(
+      `/customer/${existing.quickbooksCustomerId}`,
+    )) as {
       Customer?: { SyncToken: string };
     };
     customer.Id = existing.quickbooksCustomerId;
@@ -184,7 +235,8 @@ export async function syncContact(clientId: string) {
   })) as { Customer?: { Id: string } };
 
   const quickbooksCustomerId = r.Customer?.Id;
-  if (!quickbooksCustomerId) throw new Error("No Customer Id returned from QuickBooks");
+  if (!quickbooksCustomerId)
+    throw new Error("No Customer Id returned from QuickBooks");
 
   await db
     .insert(quickbooksClientMapTable)
@@ -199,7 +251,11 @@ export async function syncContact(clientId: string) {
 
 export async function syncAllContacts() {
   const clients = await db.select().from(clientsTable);
-  return Promise.all(clients.map((c) => syncContact(c.id).catch((e) => ({ error: String(e), clientId: c.id }))));
+  return Promise.all(
+    clients.map((c) =>
+      syncContact(c.id).catch((e) => ({ error: String(e), clientId: c.id })),
+    ),
+  );
 }
 
 // ─── Invoice sync ─────────────────────────────────────────────────────────────
@@ -216,11 +272,15 @@ async function ensureContact(clientId: string | null) {
 }
 
 export async function syncInvoice(invoiceId: string) {
-  const [invoice] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId));
+  const [invoice] = await db
+    .select()
+    .from(invoicesTable)
+    .where(eq(invoicesTable.id, invoiceId));
   if (!invoice) throw new Error(`Invoice ${invoiceId} not found`);
 
   const quickbooksCustomerId = await ensureContact(invoice.clientId);
-  if (!quickbooksCustomerId) throw new Error("Invoice has no client to bill in QuickBooks");
+  if (!quickbooksCustomerId)
+    throw new Error("Invoice has no client to bill in QuickBooks");
 
   const [existingMap] = await db
     .select()
@@ -243,7 +303,9 @@ export async function syncInvoice(invoiceId: string) {
   };
 
   if (existingMap) {
-    const current = (await qbFetch(`/invoice/${existingMap.quickbooksInvoiceId}`)) as {
+    const current = (await qbFetch(
+      `/invoice/${existingMap.quickbooksInvoiceId}`,
+    )) as {
       Invoice?: { SyncToken: string };
     };
     qbInvoice.Id = existingMap.quickbooksInvoiceId;
@@ -257,7 +319,8 @@ export async function syncInvoice(invoiceId: string) {
   })) as { Invoice?: { Id: string } };
 
   const quickbooksInvoiceId = r.Invoice?.Id;
-  if (!quickbooksInvoiceId) throw new Error("No Invoice Id returned from QuickBooks");
+  if (!quickbooksInvoiceId)
+    throw new Error("No Invoice Id returned from QuickBooks");
 
   await db
     .insert(quickbooksInvoiceMapTable)
@@ -272,13 +335,23 @@ export async function syncInvoice(invoiceId: string) {
 
 export async function syncAllInvoices() {
   const invoices = await db.select().from(invoicesTable);
-  return Promise.all(invoices.map((inv) => syncInvoice(inv.id).catch((e) => ({ error: String(e), invoiceId: inv.id }))));
+  return Promise.all(
+    invoices.map((inv) =>
+      syncInvoice(inv.id).catch((e) => ({
+        error: String(e),
+        invoiceId: inv.id,
+      })),
+    ),
+  );
 }
 
 // ─── Quote (Estimate) sync ─────────────────────────────────────────────────────
 
 export async function syncQuote(quoteId: string) {
-  const [quote] = await db.select().from(quotesTable).where(eq(quotesTable.id, quoteId));
+  const [quote] = await db
+    .select()
+    .from(quotesTable)
+    .where(eq(quotesTable.id, quoteId));
   if (!quote) throw new Error(`Quote ${quoteId} not found`);
 
   const lineItems = await db
@@ -287,7 +360,8 @@ export async function syncQuote(quoteId: string) {
     .where(eq(lineItemsTable.quoteId, quoteId));
 
   const quickbooksCustomerId = await ensureContact(quote.clientId);
-  if (!quickbooksCustomerId) throw new Error("Quote has no client to bill in QuickBooks");
+  if (!quickbooksCustomerId)
+    throw new Error("Quote has no client to bill in QuickBooks");
 
   const [existingMap] = await db
     .select()
@@ -318,7 +392,9 @@ export async function syncQuote(quoteId: string) {
   };
 
   if (existingMap) {
-    const current = (await qbFetch(`/estimate/${existingMap.quickbooksEstimateId}`)) as {
+    const current = (await qbFetch(
+      `/estimate/${existingMap.quickbooksEstimateId}`,
+    )) as {
       Estimate?: { SyncToken: string };
     };
     qbEstimate.Id = existingMap.quickbooksEstimateId;
@@ -333,7 +409,8 @@ export async function syncQuote(quoteId: string) {
   })) as { Estimate?: { Id: string } };
 
   const quickbooksEstimateId = r.Estimate?.Id;
-  if (!quickbooksEstimateId) throw new Error("No Estimate Id returned from QuickBooks");
+  if (!quickbooksEstimateId)
+    throw new Error("No Estimate Id returned from QuickBooks");
 
   await db
     .insert(quickbooksQuoteMapTable)
@@ -348,7 +425,11 @@ export async function syncQuote(quoteId: string) {
 
 export async function syncAllQuotes() {
   const quotes = await db.select().from(quotesTable);
-  return Promise.all(quotes.map((q) => syncQuote(q.id).catch((e) => ({ error: String(e), quoteId: q.id }))));
+  return Promise.all(
+    quotes.map((q) =>
+      syncQuote(q.id).catch((e) => ({ error: String(e), quoteId: q.id })),
+    ),
+  );
 }
 
 // ─── Pull payments from QuickBooks ───────────────────────────────────────────
@@ -364,7 +445,10 @@ export async function pullPayments() {
     const balance = r.Invoice?.Balance ?? r.Invoice?.TotalAmt ?? 1;
     if (balance > 0) continue;
 
-    const [inv] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, invoiceId));
+    const [inv] = await db
+      .select()
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, invoiceId));
     if (!inv || inv.status === "paid") continue;
     await db
       .update(invoicesTable)

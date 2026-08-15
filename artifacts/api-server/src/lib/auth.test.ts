@@ -39,12 +39,16 @@ describe("getUserRole", () => {
 
   it("uses the explicit role stored in Clerk publicMetadata", async () => {
     getAuth.mockReturnValue({ userId: "user_1" });
-    clerkClient.users.getUser.mockResolvedValue({ publicMetadata: { role: "foreman" } });
+    clerkClient.users.getUser.mockResolvedValue({
+      publicMetadata: { role: "foreman" },
+    });
     await expect(getUserRole(makeReq())).resolves.toBe("foreman");
   });
 
   it("uses a cached role on the request without calling Clerk again", async () => {
-    await expect(getUserRole(makeReq({ _role: "manager" }))).resolves.toBe("manager");
+    await expect(getUserRole(makeReq({ _role: "manager" }))).resolves.toBe(
+      "manager",
+    );
     expect(clerkClient.users.getUser).not.toHaveBeenCalled();
   });
 
@@ -58,7 +62,9 @@ describe("getUserRole", () => {
 describe("requireRole", () => {
   it("calls next() when the caller's role meets the minimum", async () => {
     getAuth.mockReturnValue({ userId: "user_1" });
-    clerkClient.users.getUser.mockResolvedValue({ publicMetadata: { role: "manager" } });
+    clerkClient.users.getUser.mockResolvedValue({
+      publicMetadata: { role: "manager" },
+    });
     const res = makeRes();
     const next = vi.fn();
     await requireRole("manager")(makeReq(), res, next);
@@ -68,7 +74,9 @@ describe("requireRole", () => {
 
   it("rejects with 403 when the caller's role is below the minimum", async () => {
     getAuth.mockReturnValue({ userId: "user_1" });
-    clerkClient.users.getUser.mockResolvedValue({ publicMetadata: { role: "foreman" } });
+    clerkClient.users.getUser.mockResolvedValue({
+      publicMetadata: { role: "foreman" },
+    });
     const res = makeRes();
     const next = vi.fn();
     await requireRole("manager")(makeReq(), res, next);

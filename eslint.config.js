@@ -71,7 +71,10 @@ export default tseslint.config(
       // worth the churn of escaping every apostrophe in JSX text.
       "react/no-unescaped-entities": "off",
       // cmdk sets this as a real DOM attribute for CSS targeting.
-      "react/no-unknown-property": ["error", { ignore: ["cmdk-input-wrapper"] }],
+      "react/no-unknown-property": [
+        "error",
+        { ignore: ["cmdk-input-wrapper"] },
+      ],
     },
   })),
   prettierConfig,

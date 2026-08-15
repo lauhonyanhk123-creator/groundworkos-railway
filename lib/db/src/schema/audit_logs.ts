@@ -9,7 +9,9 @@ export const auditLogsTable = pgTable("audit_logs", {
   userId: text("user_id"),
   userName: text("user_name"),
   userEmail: text("user_email"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type AuditLog = typeof auditLogsTable.$inferSelect;

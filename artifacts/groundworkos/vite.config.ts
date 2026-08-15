@@ -35,10 +35,7 @@ export default defineConfig(({ command, isPreview }) => {
 
   return {
     base: basePath,
-    plugins: [
-      react(),
-      tailwindcss({ optimize: false }),
-    ],
+    plugins: [react(), tailwindcss({ optimize: false })],
     resolve: {
       alias: {
         "@": path.resolve(import.meta.dirname, "src"),
@@ -53,7 +50,8 @@ export default defineConfig(({ command, isPreview }) => {
         output: {
           manualChunks(id) {
             if (!id.includes("node_modules")) return;
-            if (/[\\/]node_modules[\\/]react(-dom)?[\\/]/.test(id)) return "react";
+            if (/[\\/]node_modules[\\/]react(-dom)?[\\/]/.test(id))
+              return "react";
             if (id.includes("@react-pdf/renderer")) return "react-pdf";
             if (id.includes("recharts")) return "recharts";
             if (id.includes("@radix-ui/")) return "radix";

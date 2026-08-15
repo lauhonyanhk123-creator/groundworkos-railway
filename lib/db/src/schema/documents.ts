@@ -14,9 +14,13 @@ export const documentsTable = pgTable("documents", {
   relatedName: text("related_name"),
   notes: text("notes"),
   filePath: text("file_path"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertDocumentSchema = createInsertSchema(documentsTable).omit({ createdAt: true });
+export const insertDocumentSchema = createInsertSchema(documentsTable).omit({
+  createdAt: true,
+});
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type Document = typeof documentsTable.$inferSelect;

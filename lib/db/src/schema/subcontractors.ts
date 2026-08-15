@@ -1,4 +1,11 @@
-import { pgTable, text, real, boolean, date, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  real,
+  boolean,
+  date,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,9 +26,13 @@ export const subcontractorsTable = pgTable("subcontractors", {
   address: text("address"),
   notes: text("notes"),
   active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertSubcontractorSchema = createInsertSchema(subcontractorsTable).omit({ createdAt: true });
+export const insertSubcontractorSchema = createInsertSchema(
+  subcontractorsTable,
+).omit({ createdAt: true });
 export type InsertSubcontractor = z.infer<typeof insertSubcontractorSchema>;
 export type Subcontractor = typeof subcontractorsTable.$inferSelect;

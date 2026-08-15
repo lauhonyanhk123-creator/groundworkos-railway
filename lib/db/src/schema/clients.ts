@@ -11,9 +11,13 @@ export const clientsTable = pgTable("clients", {
   address: text("address"),
   vatNumber: text("vat_number"),
   notes: text("notes"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertClientSchema = createInsertSchema(clientsTable).omit({ createdAt: true });
+export const insertClientSchema = createInsertSchema(clientsTable).omit({
+  createdAt: true,
+});
 export type InsertClient = z.infer<typeof insertClientSchema>;
 export type Client = typeof clientsTable.$inferSelect;

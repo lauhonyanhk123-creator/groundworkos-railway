@@ -52,7 +52,12 @@ describe("POST /api/timesheets cost derivation", () => {
     const res = await fetch(`${baseUrl}/api/timesheets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workerName: "Dave Walters", workDate: "2026-06-01", hoursWorked: 4, dayRate: 200 }),
+      body: JSON.stringify({
+        workerName: "Dave Walters",
+        workDate: "2026-06-01",
+        hoursWorked: 4,
+        dayRate: 200,
+      }),
     });
     expect(res.status).toBe(201);
     const row = await res.json();
@@ -63,7 +68,11 @@ describe("POST /api/timesheets cost derivation", () => {
     const res = await fetch(`${baseUrl}/api/timesheets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workerName: "Dave Walters", workDate: "2026-06-01", hoursWorked: 8 }),
+      body: JSON.stringify({
+        workerName: "Dave Walters",
+        workDate: "2026-06-01",
+        hoursWorked: 8,
+      }),
     });
     expect(res.status).toBe(201);
     const row = await res.json();
@@ -76,7 +85,12 @@ describe("full write cycle for /api/timesheets/:id", () => {
     const createRes = await fetch(`${baseUrl}/api/timesheets`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workerName: "Colin Sharp", workDate: "2026-06-02", hoursWorked: 8, dayRate: 160 }),
+      body: JSON.stringify({
+        workerName: "Colin Sharp",
+        workDate: "2026-06-02",
+        hoursWorked: 8,
+        dayRate: 160,
+      }),
     });
     expect(createRes.status).toBe(201);
     const created = await createRes.json();
@@ -101,14 +115,22 @@ describe("full write cycle for /api/timesheets/:id", () => {
     expect(patched.hoursWorked).toBe(4);
     expect(patched.cost).toBe(80);
 
-    const [persisted] = await db.select().from(timesheetsTable).where(eq(timesheetsTable.id, created.id));
+    const [persisted] = await db
+      .select()
+      .from(timesheetsTable)
+      .where(eq(timesheetsTable.id, created.id));
     expect(persisted?.cost).toBe(80);
     expect(persisted?.dayRate).toBe(160);
 
-    const deleteRes = await fetch(`${baseUrl}/api/timesheets/${created.id}`, { method: "DELETE" });
+    const deleteRes = await fetch(`${baseUrl}/api/timesheets/${created.id}`, {
+      method: "DELETE",
+    });
     expect(deleteRes.status).toBe(204);
 
-    const rowsAfterDelete = await db.select().from(timesheetsTable).where(eq(timesheetsTable.id, created.id));
+    const rowsAfterDelete = await db
+      .select()
+      .from(timesheetsTable)
+      .where(eq(timesheetsTable.id, created.id));
     expect(rowsAfterDelete).toHaveLength(0);
   });
 });

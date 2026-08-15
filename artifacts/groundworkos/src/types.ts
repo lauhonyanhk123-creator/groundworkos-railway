@@ -1,5 +1,21 @@
-export type JobStatus = 'enquiry' | 'quoted' | 'active' | 'on_hold' | 'complete' | 'cancelled';
-export type JobType = 'drainage' | 'foundations' | 'excavation' | 'kerbing' | 'sewers' | 'reinstatement' | 'piling' | 'subbase' | 'utilities' | 'groundworks';
+export type JobStatus =
+  | "enquiry"
+  | "quoted"
+  | "active"
+  | "on_hold"
+  | "complete"
+  | "cancelled";
+export type JobType =
+  | "drainage"
+  | "foundations"
+  | "excavation"
+  | "kerbing"
+  | "sewers"
+  | "reinstatement"
+  | "piling"
+  | "subbase"
+  | "utilities"
+  | "groundworks";
 
 export interface Job {
   id: string;
@@ -22,7 +38,12 @@ export interface Job {
   permit_number: string | null;
 }
 
-export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'declined' | 'expired';
+export type QuoteStatus =
+  | "draft"
+  | "sent"
+  | "accepted"
+  | "declined"
+  | "expired";
 
 export interface LineItem {
   id: string;
@@ -51,7 +72,7 @@ export interface Quote {
   sent_at: string | null;
 }
 
-export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'credited';
+export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue" | "credited";
 
 export interface Invoice {
   id: string;
@@ -87,7 +108,7 @@ export interface Client {
   total_value: number;
 }
 
-export type CISStatus = 'gross' | 'net' | 'unmatched' | 'unverified';
+export type CISStatus = "gross" | "net" | "unmatched" | "unverified";
 
 export interface Subcontractor {
   id: string;
@@ -109,9 +130,16 @@ export interface Subcontractor {
   active: boolean;
 }
 
-export type DocumentType = 'rams' | 'insurance' | 'certification' | 'permit' | 'compliance' | 'contract' | 'other';
-export type DocumentStatus = 'valid' | 'expiring_soon' | 'expired' | 'pending';
-export type DocumentRelatedTo = 'company' | 'job' | 'subcontractor' | 'plant';
+export type DocumentType =
+  | "rams"
+  | "insurance"
+  | "certification"
+  | "permit"
+  | "compliance"
+  | "contract"
+  | "other";
+export type DocumentStatus = "valid" | "expiring_soon" | "expired" | "pending";
+export type DocumentRelatedTo = "company" | "job" | "subcontractor" | "plant";
 
 export interface Document {
   id: string;
@@ -131,7 +159,11 @@ export interface Document {
 export interface ScheduleEntry {
   id: string;
   job_id: string | null;
-  job?: { job_number: string; title: string; client: { company_name: string } | null } | null;
+  job?: {
+    job_number: string;
+    title: string;
+    client: { company_name: string } | null;
+  } | null;
   title: string;
   start_datetime: string;
   end_datetime: string;
@@ -139,10 +171,15 @@ export interface ScheduleEntry {
   plant_assigned: string | null;
   foreman: string | null;
   notes: string | null;
-  type: 'site_work' | 'delivery' | 'inspection' | 'meeting' | 'other';
+  type: "site_work" | "delivery" | "inspection" | "meeting" | "other";
 }
 
-export type PlantStatus = 'available' | 'on_site' | 'maintenance' | 'hired_in' | 'disposed';
+export type PlantStatus =
+  | "available"
+  | "on_site"
+  | "maintenance"
+  | "hired_in"
+  | "disposed";
 
 export interface Plant {
   id: string;
@@ -175,7 +212,7 @@ export interface RateBookEntry {
   notes: string | null;
 }
 
-export type PurchaseOrderStatus = 'draft' | 'ordered' | 'received' | 'invoiced';
+export type PurchaseOrderStatus = "draft" | "ordered" | "received" | "invoiced";
 
 export interface PurchaseOrder {
   id: string;

@@ -18,9 +18,13 @@ export const invoicesTable = pgTable("invoices", {
   paidAt: timestamp("paid_at", { withTimezone: true }),
   notes: text("notes"),
   cisDeduction: real("cis_deduction"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertInvoiceSchema = createInsertSchema(invoicesTable).omit({ createdAt: true });
+export const insertInvoiceSchema = createInsertSchema(invoicesTable).omit({
+  createdAt: true,
+});
 export type InsertInvoice = z.infer<typeof insertInvoiceSchema>;
 export type Invoice = typeof invoicesTable.$inferSelect;

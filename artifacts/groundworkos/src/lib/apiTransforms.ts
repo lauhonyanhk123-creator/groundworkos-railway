@@ -1,12 +1,27 @@
 import type {
-  ClientRecord, JobRecord, QuoteRecord, InvoiceRecord,
-  SubcontractorRecord, DocumentRecord, ScheduleEntryRecord,
-  PlantRecord, RateBookRecord,
-} from '@workspace/api-client-react';
+  ClientRecord,
+  JobRecord,
+  QuoteRecord,
+  InvoiceRecord,
+  SubcontractorRecord,
+  DocumentRecord,
+  ScheduleEntryRecord,
+  PlantRecord,
+  RateBookRecord,
+} from "@workspace/api-client-react";
 import type {
-  Client, Job, Quote, Invoice, Subcontractor, Document,
-  ScheduleEntry, Plant, RateBookEntry, Timesheet, PurchaseOrder,
-} from '../types';
+  Client,
+  Job,
+  Quote,
+  Invoice,
+  Subcontractor,
+  Document,
+  ScheduleEntry,
+  Plant,
+  RateBookEntry,
+  Timesheet,
+  PurchaseOrder,
+} from "../types";
 
 export function toPurchaseOrder(r: Record<string, any>): PurchaseOrder {
   return {
@@ -20,7 +35,7 @@ export function toPurchaseOrder(r: Record<string, any>): PurchaseOrder {
     amount: Number(r.amount ?? 0),
     vat_amount: Number(r.vatAmount ?? 0),
     total_amount: Number(r.totalAmount ?? 0),
-    status: r.status as PurchaseOrder['status'],
+    status: r.status as PurchaseOrder["status"],
     order_date: r.orderDate,
     expected_delivery: r.expectedDelivery ?? null,
     delivery_date: r.deliveryDate ?? null,
@@ -69,12 +84,12 @@ export function toJob(r: JobRecord): Job {
     title: r.title,
     client_id: r.clientId ?? null,
     client: r.clientName ? { company_name: r.clientName } : null,
-    type: (r.type as Job['type']) ?? null,
+    type: (r.type as Job["type"]) ?? null,
     site_address: r.siteAddress ?? null,
     value: r.value ?? null,
     start_date: r.startDate ?? null,
     end_date: r.endDate ?? null,
-    status: r.status as Job['status'],
+    status: r.status as Job["status"],
     progress_percent: r.progressPercent,
     description: r.description ?? null,
     created_at: r.createdAt,
@@ -93,7 +108,7 @@ export function toQuote(r: QuoteRecord): Quote {
     client: r.clientName ? { company_name: r.clientName } : null,
     job_id: r.jobId ?? null,
     title: r.title ?? null,
-    status: r.status as Quote['status'],
+    status: r.status as Quote["status"],
     subtotal: r.subtotal,
     vat_amount: r.vatAmount,
     total_amount: r.totalAmount,
@@ -101,7 +116,7 @@ export function toQuote(r: QuoteRecord): Quote {
     notes: r.notes ?? null,
     created_at: r.createdAt,
     sent_at: r.sentAt ?? null,
-    line_items: (r.lineItems ?? []).map(li => ({
+    line_items: (r.lineItems ?? []).map((li) => ({
       id: li.id,
       description: li.description,
       quantity: li.quantity,
@@ -124,7 +139,7 @@ export function toInvoice(r: InvoiceRecord): Invoice {
     subtotal: r.subtotal,
     vat_amount: r.vatAmount,
     total_amount: r.totalAmount,
-    status: r.status as Invoice['status'],
+    status: r.status as Invoice["status"],
     issued_date: r.issuedDate,
     due_date: r.dueDate ?? null,
     paid_at: r.paidAt ?? null,
@@ -142,7 +157,7 @@ export function toSubcontractor(r: SubcontractorRecord): Subcontractor {
     email: r.email ?? null,
     phone: r.phone ?? null,
     utr_number: r.utrNumber ?? null,
-    cis_status: r.cisStatus as Subcontractor['cis_status'],
+    cis_status: r.cisStatus as Subcontractor["cis_status"],
     cis_deduction_rate: r.cisDeductionRate,
     trade: r.trade ?? null,
     nrswa_card_number: r.nrswaCardNumber ?? null,
@@ -160,11 +175,11 @@ export function toDocument(r: DocumentRecord): Document {
   return {
     id: r.id,
     name: r.name,
-    type: r.type as Document['type'],
-    status: r.status as Document['status'],
+    type: r.type as Document["type"],
+    status: r.status as Document["status"],
     expiry_date: r.expiryDate ?? null,
     issued_date: r.issuedDate ?? null,
-    related_to: r.relatedTo as Document['related_to'],
+    related_to: r.relatedTo as Document["related_to"],
     related_id: r.relatedId ?? null,
     related_name: r.relatedName ?? null,
     notes: r.notes ?? null,
@@ -177,9 +192,14 @@ export function toScheduleEntry(r: ScheduleEntryRecord): ScheduleEntry {
   return {
     id: r.id,
     job_id: r.jobId ?? null,
-    job: (r.jobNumber && r.jobTitle)
-      ? { job_number: r.jobNumber, title: r.jobTitle, client: r.clientName ? { company_name: r.clientName } : null }
-      : null,
+    job:
+      r.jobNumber && r.jobTitle
+        ? {
+            job_number: r.jobNumber,
+            title: r.jobTitle,
+            client: r.clientName ? { company_name: r.clientName } : null,
+          }
+        : null,
     title: r.title,
     start_datetime: r.startDatetime,
     end_datetime: r.endDatetime,
@@ -187,7 +207,7 @@ export function toScheduleEntry(r: ScheduleEntryRecord): ScheduleEntry {
     plant_assigned: r.plantAssigned ?? null,
     foreman: r.foreman ?? null,
     notes: r.notes ?? null,
-    type: r.type as ScheduleEntry['type'],
+    type: r.type as ScheduleEntry["type"],
   };
 }
 
@@ -200,7 +220,7 @@ export function toPlant(r: PlantRecord): Plant {
     make: r.make ?? null,
     model: r.model ?? null,
     year: r.year ?? null,
-    status: r.status as Plant['status'],
+    status: r.status as Plant["status"],
     current_job_id: r.currentJobId ?? null,
     current_job: r.currentJobTitle ? { title: r.currentJobTitle } : null,
     service_due: r.serviceDue ?? null,

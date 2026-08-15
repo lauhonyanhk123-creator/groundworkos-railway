@@ -13,9 +13,13 @@ export const scheduleEntriesTable = pgTable("schedule_entries", {
   foreman: text("foreman"),
   notes: text("notes"),
   type: text("type").notNull().default("site_work"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
-export const insertScheduleEntrySchema = createInsertSchema(scheduleEntriesTable).omit({ createdAt: true });
+export const insertScheduleEntrySchema = createInsertSchema(
+  scheduleEntriesTable,
+).omit({ createdAt: true });
 export type InsertScheduleEntry = z.infer<typeof insertScheduleEntrySchema>;
 export type ScheduleEntry = typeof scheduleEntriesTable.$inferSelect;
