@@ -1,16 +1,29 @@
-import type { Request, RequestHandler } from "express";
+import type { Request, RequestHandler, Response } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { type Role, ROLE_RANK, resolveRole } from "@workspace/shared-role";
 
 export type { Role };
 
+declare global {
+  // Standard pattern for augmenting Express's Request type (see @types/express).
+  // eslint-disable-next-line @typescript-eslint/no-namespace
+  namespace Express {
+    interface Request {
+      /** Per-request role cache, set by getUserRole so repeated calls within
+       * the same request don't re-hit Clerk. */
+      _role?: Role;
+      /** Populated by the top-level requireAuth middleware in routes/index.ts. */
+      userId?: string;
+    }
+  }
+}
+
 export async function getUserRole(req: Request): Promise<Role> {
-  const cached = (req as any)._role as Role | undefined;
+  const cached = req._role;
   if (cached) return cached;
 
   const auth = getAuth(req);
-  const userId: string | undefined =
-    (req as any).userId ?? (auth as any)?.userId;
+  const userId = req.userId ?? auth.userId ?? undefined;
   // Users with no explicit role default to admin, so brand-new signups have
   // full access out of the box. An explicitly-set role always takes precedence.
   let role: Role = "admin";
@@ -22,7 +35,7 @@ export async function getUserRole(req: Request): Promise<Role> {
     const user = await clerkClient.users.getUser(userId);
     role = resolveRole(user.publicMetadata?.role);
   }
-  (req as any)._role = role;
+  req._role = role;
   return role;
 }
 
@@ -47,13 +60,16 @@ export function requireRole<
     } catch {
       // Fail closed: if the caller's role can't be verified (e.g. a Clerk
       // outage), deny the request rather than assuming the default admin role.
-      (res.status(503) as any).json({
+      // Cast to the base Response type: this error body doesn't conform to
+      // the route's generic ResBody, which is fine since we're short-circuiting
+      // before the route handler ever runs.
+      (res as Response).status(503).json({
         error: "Unable to verify permissions, please try again",
       });
       return;
     }
     if (ROLE_RANK[role] < ROLE_RANK[minRole]) {
-      (res.status(403) as any).json({
+      (res as Response).status(403).json({
         error: `Forbidden: ${minRole} role required`,
       });
       return;
