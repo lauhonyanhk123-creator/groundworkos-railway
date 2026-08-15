@@ -62,6 +62,23 @@ CLERK_PUBLISHABLE_KEY=pk_live_...
 CLERK_SECRET_KEY=sk_live_...
 VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
 
+# App settings (required)
+APP_URL=https://your-app.example.com
+BASE_PATH=/
+STATIC_DIR=artifacts/groundworkos/dist/public
+
+# Object storage — S3-compatible (required). S3_BUCKET, S3_ACCESS_KEY_ID
+# and S3_SECRET_ACCESS_KEY throw at boot if unset; S3_REGION and
+# S3_ENDPOINT silently default to AWS us-east-1 if unset, which is wrong
+# for most providers, so set all five explicitly. Use AWS S3, Cloudflare
+# R2, Backblaze B2, Oracle Cloud Object Storage, MinIO, etc. — Railway
+# has no built-in object storage.
+S3_BUCKET=groundworkos-files
+S3_REGION=us-east-1
+S3_ENDPOINT=https://s3.us-east-1.amazonaws.com
+S3_ACCESS_KEY_ID=your-s3-access-key
+S3_SECRET_ACCESS_KEY=your-s3-secret-key
+
 # Email (optional — get from resend.com)
 RESEND_API_KEY=re_...
 
@@ -86,7 +103,7 @@ FREEAGENT_CLIENT_SECRET=...
 FREEAGENT_REDIRECT_URI=...
 ```
 
-Each accounting integration is optional and independent — set only the credentials for the providers this client actually uses. Every provider uses self-service OAuth: the client logs in with their own accounting software account and authorises access, so you never need to obtain or hold their accounting API keys.
+`DATABASE_URL`, the Clerk keys, `APP_URL`, `BASE_PATH`, `STATIC_DIR` and the five `S3_*` object storage variables are all required — the app will not build or boot correctly without them. Everything below the object storage block (email, Xero, QuickBooks, Sage, FreeAgent) is optional. See **[RAILWAY.md](./RAILWAY.md)** for how these map to Railway service variables, and each accounting integration is optional and independent — set only the credentials for the providers this client actually uses. Every provider uses self-service OAuth: the client logs in with their own accounting software account and authorises access, so you never need to obtain or hold their accounting API keys.
 
 ### Install & Run
 
