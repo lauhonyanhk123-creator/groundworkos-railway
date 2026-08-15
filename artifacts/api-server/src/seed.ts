@@ -1,4 +1,5 @@
-import { db, clientsTable, jobsTable, quotesTable, lineItemsTable, invoicesTable, subcontractorsTable, documentsTable, scheduleEntriesTable, plantTable, rateBookTable } from "@workspace/db";
+import { db, clientsTable, jobsTable, quotesTable, lineItemsTable, invoicesTable, subcontractorsTable, documentsTable, scheduleEntriesTable, plantTable, rateBookTable, idCountersTable } from "@workspace/db";
+import { sql } from "drizzle-orm";
 
 const todayDate = new Date().toISOString().split('T')[0];
 function futureDate(offsetDays: number) {
@@ -119,6 +120,36 @@ async function seed() {
     { id: 'rb17', category: 'Concrete', description: 'RC ground beam 300x400mm incl rebar and formwork', unit: 'lm', labourRate: 35.00, materialRate: 42.00, plantRate: 8.00, totalRate: 85.00, notes: null },
     { id: 'rb18', category: 'Concrete', description: 'Blinding concrete C10 75mm thick', unit: 'm²', labourRate: 4.00, materialRate: 5.50, plantRate: 1.50, totalRate: 11.00, notes: null },
   ]).onConflictDoNothing();
+
+  // The rows above are seeded with hand-picked sequence numbers (jobNumber,
+  // quoteNumber, invoiceNumber) rather than through nextSeqNumber() (see
+  // lib/generateId.ts). Sync id_counters to the highest number actually used
+  // per year so the next real POST /jobs, /quotes or /invoices doesn't
+  // generate a number that collides with one of these seeded rows (which
+  // fails with a unique-constraint 500).
+  async function syncSeqCounter(tableName: string, numbers: Array<string | null>) {
+    const highestByYear = new Map<string, number>();
+    for (const num of numbers) {
+      const match = num?.match(/-(\d{4})-(\d+)$/);
+      if (!match) continue;
+      const [, year, seq] = match;
+      const key = `${tableName}:${year}`;
+      highestByYear.set(key, Math.max(highestByYear.get(key) ?? 0, Number(seq)));
+    }
+    for (const [key, value] of highestByYear) {
+      await db
+        .insert(idCountersTable)
+        .values({ key, value })
+        .onConflictDoUpdate({
+          target: idCountersTable.key,
+          set: { value: sql`greatest(${idCountersTable.value}, ${value})` },
+        });
+    }
+  }
+
+  await syncSeqCounter("jobs", ['GW-2026-001', 'GW-2026-002', 'GW-2026-003', 'GW-2026-004', 'GW-2026-005', 'GW-2026-006', 'GW-2026-007', 'GW-2026-008']);
+  await syncSeqCounter("quotes", ['QT-2026-012', 'QT-2026-013', 'QT-2026-011', 'QT-2026-009']);
+  await syncSeqCounter("invoices", ['INV-2026-021', 'INV-2026-025', 'INV-2026-019', 'INV-2026-022', 'INV-2026-024', 'INV-2026-026']);
 
   console.log("Seed complete.");
   process.exit(0);
