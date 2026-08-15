@@ -49,9 +49,18 @@ afterAll(async () => {
 
 describe("POST /api/jobs", () => {
   it("generates a job number that does not collide with any seeded job number", async () => {
+    // Same year derivation as lib/generateId.ts's nextSeqNumber() and
+    // seed.ts, so this assertion holds regardless of which calendar year
+    // the suite happens to run in.
+    const year = new Date().getFullYear();
+
     const seededJobs = await db.select({ jobNumber: jobsTable.jobNumber }).from(jobsTable);
     // Sanity check: this test is only meaningful against a seeded database.
     expect(seededJobs.length).toBeGreaterThan(0);
+    // Sanity check: the seeded rows must actually land in the current
+    // year's bucket, otherwise the collision this test guards against
+    // can't happen and the assertions below would pass vacuously.
+    expect(seededJobs.some((j) => j.jobNumber.startsWith(`GW-${year}-`))).toBe(true);
     const seededNumbers = new Set(seededJobs.map((j) => j.jobNumber));
 
     const res = await fetch(`${baseUrl}/api/jobs`, {
@@ -63,6 +72,7 @@ describe("POST /api/jobs", () => {
     expect(res.status).toBe(201);
     const job = await res.json();
 
+    expect(job.jobNumber).toMatch(new RegExp(`^GW-${year}-\\d+$`));
     expect(seededNumbers.has(job.jobNumber)).toBe(false);
 
     const rows = await db.select().from(jobsTable).where(eq(jobsTable.jobNumber, job.jobNumber));
