@@ -79,3 +79,47 @@ describe("POST /api/jobs", () => {
     expect(rows).toHaveLength(1);
   });
 });
+
+describe("full write cycle for /api/jobs/:id", () => {
+  it("creates, reads, updates and deletes a job against the real database", async () => {
+    const createRes = await fetch(`${baseUrl}/api/jobs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: "Integration cycle job", status: "enquiry", value: 1000 }),
+    });
+    expect(createRes.status).toBe(201);
+    const created = await createRes.json();
+    expect(created.id).toBeTruthy();
+    expect(created.title).toBe("Integration cycle job");
+    expect(created.status).toBe("enquiry");
+
+    const getRes = await fetch(`${baseUrl}/api/jobs/${created.id}`);
+    expect(getRes.status).toBe(200);
+    const fetched = await getRes.json();
+    expect(fetched.id).toBe(created.id);
+    expect(fetched.title).toBe("Integration cycle job");
+
+    const patchRes = await fetch(`${baseUrl}/api/jobs/${created.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "active", progressPercent: 40 }),
+    });
+    expect(patchRes.status).toBe(200);
+    const patched = await patchRes.json();
+    expect(patched.status).toBe("active");
+    expect(patched.progressPercent).toBe(40);
+
+    const [persisted] = await db.select().from(jobsTable).where(eq(jobsTable.id, created.id));
+    expect(persisted?.status).toBe("active");
+    expect(persisted?.progressPercent).toBe(40);
+
+    const deleteRes = await fetch(`${baseUrl}/api/jobs/${created.id}`, { method: "DELETE" });
+    expect(deleteRes.status).toBe(204);
+
+    const getAfterDelete = await fetch(`${baseUrl}/api/jobs/${created.id}`);
+    expect(getAfterDelete.status).toBe(404);
+
+    const rowsAfterDelete = await db.select().from(jobsTable).where(eq(jobsTable.id, created.id));
+    expect(rowsAfterDelete).toHaveLength(0);
+  });
+});
