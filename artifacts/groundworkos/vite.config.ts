@@ -49,6 +49,17 @@ export default defineConfig(({ command, isPreview }) => {
     build: {
       outDir: path.resolve(import.meta.dirname, "dist/public"),
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+            if (/[\\/]node_modules[\\/]react(-dom)?[\\/]/.test(id)) return "react";
+            if (id.includes("@react-pdf/renderer")) return "react-pdf";
+            if (id.includes("recharts")) return "recharts";
+            if (id.includes("@radix-ui/")) return "radix";
+          },
+        },
+      },
     },
     server: {
       port,
