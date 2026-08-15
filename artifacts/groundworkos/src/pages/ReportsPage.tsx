@@ -13,12 +13,11 @@ import {
   AreaChart,
   Area,
   CartesianGrid,
-  Legend,
 } from "recharts";
 import { Panel } from "../components/ui/Panel";
 import { StatCard } from "../components/ui/StatCard";
 import { Btn } from "../components/ui/Btn";
-import { formatCurrency, formatDate } from "../lib/utils";
+import { formatCurrency } from "../lib/utils";
 import { useApp } from "../store/AppContext";
 
 type ReportTab = "overview" | "pl" | "cis" | "ratebook";

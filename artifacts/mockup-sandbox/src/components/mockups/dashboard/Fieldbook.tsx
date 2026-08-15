@@ -1,13 +1,7 @@
 import {
-  LayoutDashboard,
   Briefcase,
-  FileText,
-  Receipt,
-  Calendar,
   Users,
-  HardHat,
   FolderOpen,
-  BarChart3,
   Truck,
   Search,
   Bell,

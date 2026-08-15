@@ -3,8 +3,6 @@ import {
   db,
   quotesTable,
   invoicesTable,
-  jobsTable,
-  clientsTable,
   companySettingsTable,
 } from "@workspace/db";
 import { eq } from "drizzle-orm";
@@ -145,11 +143,10 @@ function buildInvoiceHtml(invoice: any, company: any): string {
 }
 
 router.post("/email/send-quote", requireRole("manager"), async (req, res) => {
-  const { quoteId, to, subject, message } = req.body as {
+  const { quoteId, to, subject } = req.body as {
     quoteId: string;
     to: string;
     subject?: string;
-    message?: string;
   };
   if (!quoteId || !to)
     return res.status(400).json({ error: "quoteId and to are required" });
@@ -206,11 +203,10 @@ router.post("/email/send-quote", requireRole("manager"), async (req, res) => {
 });
 
 router.post("/email/send-invoice", requireRole("manager"), async (req, res) => {
-  const { invoiceId, to, subject, message } = req.body as {
+  const { invoiceId, to, subject } = req.body as {
     invoiceId: string;
     to: string;
     subject?: string;
-    message?: string;
   };
   if (!invoiceId || !to)
     return res.status(400).json({ error: "invoiceId and to are required" });

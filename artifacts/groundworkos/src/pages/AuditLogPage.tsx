@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Search, Clock, Filter } from "lucide-react";
 import { Panel } from "../components/ui/Panel";
 import { StatCard } from "../components/ui/StatCard";
-import { formatDate } from "../lib/utils";
 
 const BASE = (import.meta as any).env?.BASE_URL?.replace(/\/$/, "") ?? "";
 

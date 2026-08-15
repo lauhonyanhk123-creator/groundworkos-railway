@@ -17,7 +17,7 @@ import { StatCard } from "../components/ui/StatCard";
 import { Badge } from "../components/ui/Badge";
 import { Btn } from "../components/ui/Btn";
 import { Modal, Field, Input, Select, Textarea } from "../components/ui/Modal";
-import { cn, formatDate, daysUntil } from "../lib/utils";
+import { formatDate, daysUntil } from "../lib/utils";
 import { useApp } from "../store/AppContext";
 import {
   createDocument,

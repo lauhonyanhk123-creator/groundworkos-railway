@@ -1,13 +1,5 @@
 import { useState, useMemo } from "react";
-import {
-  Plus,
-  Clock,
-  Trash2,
-  X,
-  ChevronRight,
-  Download,
-  User,
-} from "lucide-react";
+import { Plus, Clock, Trash2, X, ChevronRight, Download } from "lucide-react";
 import { Panel } from "../components/ui/Panel";
 import { StatCard } from "../components/ui/StatCard";
 import { Btn } from "../components/ui/Btn";
@@ -217,11 +209,6 @@ export function TimesheetsPage() {
     a.download = `timesheets-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
   }
-
-  const activeJobs = jobs.filter(
-    (j) =>
-      j.status === "active" || j.status === "enquiry" || j.status === "quoted",
-  );
 
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto">

@@ -21,7 +21,6 @@ import {
   ChevronRight,
   MapPin,
   FileWarning,
-  Activity,
   PlusCircle,
   Edit2,
   Trash2,
@@ -43,13 +42,6 @@ const formatCurrency = (v: number) =>
     currency: "GBP",
     maximumFractionDigits: 0,
   }).format(v);
-const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-
 const NAV = [
   { name: "Dashboard", icon: LayoutDashboard, active: true },
   { name: "Jobs", icon: Briefcase },
@@ -389,7 +381,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function Current() {
-  const [bellOpen, setBellOpen] = useState(false);
+  const [, setBellOpen] = useState(false);
 
   return (
     <div
