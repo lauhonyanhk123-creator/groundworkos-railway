@@ -1,7 +1,6 @@
 import { useState } from "react";
 import {
   Plus,
-  Search,
   Mail,
   Phone,
   X,
@@ -14,6 +13,8 @@ import {
 import { Panel } from "../components/ui/Panel";
 import { StatCard } from "../components/ui/StatCard";
 import { Btn } from "../components/ui/Btn";
+import { SearchInput } from "../components/ui/SearchInput";
+import { ListPanel } from "../components/ui/ListPanel";
 import { Modal, Field, Input, Textarea } from "../components/ui/Modal";
 import { cn, formatCurrency } from "../lib/utils";
 import { useApp } from "../store/AppContext";
@@ -189,137 +190,115 @@ export function ClientsPage() {
         />
       </div>
 
-      <div className="relative">
-        <Search
-          className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
-          style={{ color: "#7a7469" }}
-        />
-        <input
-          type="text"
-          placeholder="Search clients..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="pl-9 pr-4 py-2 w-full max-w-sm rounded-lg focus:outline-none transition-colors"
-          style={{
-            backgroundColor: "#fafaf8",
-            border: "1px solid #d9d4ce",
-            color: "#181410",
-          }}
-          onFocus={(e) => (e.target.style.borderColor = "#1b5e78")}
-          onBlur={(e) => (e.target.style.borderColor = "#d9d4ce")}
-        />
-      </div>
+      <SearchInput
+        value={search}
+        onChange={setSearch}
+        placeholder="Search clients..."
+        className="py-2 w-full max-w-sm rounded-lg focus:outline-none transition-colors"
+      />
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className={selectedClient ? "xl:col-span-2" : "xl:col-span-3"}>
-          <Panel title="Client Directory" badge={filtered.length} noPad>
-            {filtered.length === 0 ? (
-              <p
-                className="text-center py-12 text-sm"
-                style={{ color: "#a8a099" }}
+          <ListPanel
+            title="Client Directory"
+            items={filtered}
+            emptyMessage="No clients found"
+            renderRow={(client, i, total) => (
+              <div
+                key={client.id}
+                onClick={() =>
+                  setSelected(selected === client.id ? null : client.id)
+                }
+                className={cn(
+                  "flex items-center gap-5 px-5 py-4 cursor-pointer transition-colors group",
+                  selected === client.id
+                    ? "bg-[#eeeae4]"
+                    : "hover:bg-[#eeeae4]",
+                )}
+                style={{
+                  borderBottom:
+                    i < total - 1 ? "1px solid #d9d4ce" : "none",
+                  borderLeft:
+                    selected === client.id
+                      ? "3px solid #1b5e78"
+                      : "3px solid transparent",
+                }}
               >
-                No clients found
-              </p>
-            ) : (
-              <div>
-                {filtered.map((client, i) => (
+                <div
+                  className="w-10 h-10 rounded flex items-center justify-center text-sm font-bold flex-shrink-0"
+                  style={{
+                    backgroundColor: "#e8e4dd",
+                    color: "#4a4540",
+                    border: "1px solid #d9d4ce",
+                  }}
+                >
+                  {client.company_name[0]}
+                </div>
+                <div className="flex-1 min-w-0">
                   <div
-                    key={client.id}
-                    onClick={() =>
-                      setSelected(selected === client.id ? null : client.id)
-                    }
-                    className={cn(
-                      "flex items-center gap-5 px-5 py-4 cursor-pointer transition-colors group",
-                      selected === client.id
-                        ? "bg-[#eeeae4]"
-                        : "hover:bg-[#eeeae4]",
-                    )}
-                    style={{
-                      borderBottom:
-                        i < filtered.length - 1 ? "1px solid #d9d4ce" : "none",
-                      borderLeft:
-                        selected === client.id
-                          ? "3px solid #1b5e78"
-                          : "3px solid transparent",
-                    }}
+                    className="text-sm font-semibold truncate"
+                    style={{ color: "#181410" }}
                   >
-                    <div
-                      className="w-10 h-10 rounded flex items-center justify-center text-sm font-bold flex-shrink-0"
-                      style={{
-                        backgroundColor: "#e8e4dd",
-                        color: "#4a4540",
-                        border: "1px solid #d9d4ce",
-                      }}
-                    >
-                      {client.company_name[0]}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div
-                        className="text-sm font-semibold truncate"
-                        style={{ color: "#181410" }}
-                      >
-                        {client.company_name}
-                      </div>
-                      <div
-                        className="text-xs mt-0.5 truncate"
-                        style={{ color: "#7a7469" }}
-                      >
-                        {client.contact_name ?? "No contact"}
-                      </div>
-                    </div>
-                    {client.email && (
-                      <div
-                        className="hidden md:flex items-center gap-1.5 w-48 flex-shrink-0 text-xs"
-                        style={{ color: "#7a7469" }}
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                        <span className="truncate font-mono">
-                          {client.email}
-                        </span>
-                      </div>
-                    )}
-                    <div className="text-right hidden sm:block w-28 flex-shrink-0">
-                      <div
-                        className="text-[10px] font-bold uppercase tracking-widest mb-1"
-                        style={{ color: "#7a7469" }}
-                      >
-                        Jobs
-                      </div>
-                      <div
-                        className="text-sm font-medium font-mono tnum"
-                        style={{ color: "#181410" }}
-                      >
-                        {client.total_jobs}
-                      </div>
-                    </div>
-                    <div className="text-right hidden sm:block w-28 flex-shrink-0">
-                      <div
-                        className="text-[10px] font-bold uppercase tracking-widest mb-1"
-                        style={{ color: "#7a7469" }}
-                      >
-                        Value
-                      </div>
-                      <div
-                        className="text-sm font-medium font-mono tnum"
-                        style={{ color: "#181410" }}
-                      >
-                        {formatCurrency(client.total_value)}
-                      </div>
-                    </div>
-                    <ChevronRight
-                      className={cn(
-                        "w-4 h-4 flex-shrink-0 transition-opacity ml-2",
-                        selected === client.id
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100",
-                      )}
-                      style={{ color: "#7a7469" }}
-                    />
+                    {client.company_name}
                   </div>
-                ))}
+                  <div
+                    className="text-xs mt-0.5 truncate"
+                    style={{ color: "#7a7469" }}
+                  >
+                    {client.contact_name ?? "No contact"}
+                  </div>
+                </div>
+                {client.email && (
+                  <div
+                    className="hidden md:flex items-center gap-1.5 w-48 flex-shrink-0 text-xs"
+                    style={{ color: "#7a7469" }}
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span className="truncate font-mono">
+                      {client.email}
+                    </span>
+                  </div>
+                )}
+                <div className="text-right hidden sm:block w-28 flex-shrink-0">
+                  <div
+                    className="text-[10px] font-bold uppercase tracking-widest mb-1"
+                    style={{ color: "#7a7469" }}
+                  >
+                    Jobs
+                  </div>
+                  <div
+                    className="text-sm font-medium font-mono tnum"
+                    style={{ color: "#181410" }}
+                  >
+                    {client.total_jobs}
+                  </div>
+                </div>
+                <div className="text-right hidden sm:block w-28 flex-shrink-0">
+                  <div
+                    className="text-[10px] font-bold uppercase tracking-widest mb-1"
+                    style={{ color: "#7a7469" }}
+                  >
+                    Value
+                  </div>
+                  <div
+                    className="text-sm font-medium font-mono tnum"
+                    style={{ color: "#181410" }}
+                  >
+                    {formatCurrency(client.total_value)}
+                  </div>
+                </div>
+                <ChevronRight
+                  className={cn(
+                    "w-4 h-4 flex-shrink-0 transition-opacity ml-2",
+                    selected === client.id
+                      ? "opacity-100"
+                      : "opacity-0 group-hover:opacity-100",
+                  )}
+                  style={{ color: "#7a7469" }}
+                />
               </div>
             )}
-          </Panel>
+          />
         </div>
 
         {selectedClient && (
