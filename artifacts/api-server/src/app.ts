@@ -11,6 +11,7 @@ import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { buildCspDirectives } from "./lib/csp";
 
 const app: Express = express();
 
@@ -25,22 +26,18 @@ app.set("trust proxy", 1);
 /**
  * Security headers. helmet sets a restrictive Content-Security-Policy, HSTS,
  * X-Frame-Options (via frameguard), X-Content-Type-Options, and other
- * hardening headers on every response. If the optional static SPA (see
+ * hardening headers on every response. Clerk's browser SDK loads from - and
+ * calls back to - the Clerk Frontend API origin encoded in
+ * CLERK_PUBLISHABLE_KEY, so buildCspDirectives adds that origin wherever
+ * Clerk needs it (see src/lib/csp.ts). If the optional static SPA (see
  * STATIC_DIR below) needs additional script/style/image sources, extend the
- * directives below rather than relaxing them wholesale.
+ * directives there rather than relaxing them wholesale.
  */
 app.use(
   helmet({
     contentSecurityPolicy: {
       useDefaults: true,
-      directives: {
-        "default-src": ["'self'"],
-        "script-src": ["'self'"],
-        "style-src": ["'self'", "'unsafe-inline'"],
-        "img-src": ["'self'", "data:"],
-        "frame-ancestors": ["'none'"],
-        "object-src": ["'none'"],
-      },
+      directives: buildCspDirectives(process.env.CLERK_PUBLISHABLE_KEY),
     },
     hsts: {
       maxAge: 15552000, // 180 days
