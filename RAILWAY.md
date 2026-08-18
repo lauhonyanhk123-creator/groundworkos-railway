@@ -47,12 +47,12 @@ Database (reference the Postgres plugin's variable instead of retyping it):
 
 - DATABASE_URL — reference ${{Postgres.DATABASE_URL}}
 
-Auth (from dashboard.clerk.com):
+Auth (from dashboard.clerk.com) — sign-in is email-only; no Google or
+other social/OAuth sign-in provider is configured:
 
-- CLERK_STANDALONE=true
-- CLERK*PUBLISHABLE_KEY=pk_live*...
-- CLERK*SECRET_KEY=sk_live*...
-- VITE*CLERK_PUBLISHABLE_KEY=pk_live*... (same key, needed at build time)
+- CLERK_PUBLISHABLE_KEY=pk_live_...
+- CLERK_SECRET_KEY=sk_live_...
+- VITE_CLERK_PUBLISHABLE_KEY=pk_live_... (same key, needed at build time)
 
 App settings:
 
@@ -69,14 +69,25 @@ File storage:
 
 Optional:
 
+- S3_PUBLIC_PREFIX — key prefix for public assets, defaults to `public/`
+- LOG_LEVEL — trace|debug|info|warn|error, defaults to `info`
+- CLERK_WEBHOOK_SIGNING_SECRET / SIGNUP_ALLOWED_EMAIL_DOMAINS — a
+  server-side backstop for restricting sign-up by email domain, on top of
+  Clerk Dashboard → Configure → Restrictions (the primary control)
 - RESEND_API_KEY for quote/invoice emails
-- XERO*CLIENT_ID / XERO_CLIENT_SECRET / XERO_REDIRECT_URI (and the
-  equivalent QUICKBOOKS*, SAGE*, FREEAGENT* variables) for accounting
+- XERO_CLIENT_ID / XERO_CLIENT_SECRET / XERO_REDIRECT_URI (and the
+  equivalent QUICKBOOKS_, SAGE_, FREEAGENT_ variables) for accounting
   integrations — redirect URIs must point at your Railway domain, e.g.
   https://your-app.up.railway.app/api/xero/callback
 
 Railway automatically provides PORT at both build and run time, so you do
-not need to set it yourself.
+not need to set it yourself — but note the app will refuse to boot if PORT
+is ever unset (there's no built-in default), which matters if you're
+running it outside Railway's usual build/deploy flow.
+
+NODE_ENV isn't required by the app, but should be set to `production` in
+any real deployment — it controls log formatting and gates the local
+demo-data seed script.
 
 ## Step 4 — Deploy and run migrations
 
