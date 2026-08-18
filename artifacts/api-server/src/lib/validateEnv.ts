@@ -9,12 +9,40 @@ import { logger } from "./logger";
 const REQUIRED_ENV_VARS = [
   "PORT",
   "DATABASE_URL",
+  "APP_URL",
+  "BASE_PATH",
+  "STATIC_DIR",
   "S3_BUCKET",
+  "S3_REGION",
+  "S3_ENDPOINT",
   "S3_ACCESS_KEY_ID",
   "S3_SECRET_ACCESS_KEY",
   "CLERK_PUBLISHABLE_KEY",
   "CLERK_SECRET_KEY",
 ] as const;
+
+/**
+ * Messages for vars whose failure mode isn't self-explanatory from the name
+ * alone — shown instead of the generic "Missing required environment
+ * variable" message. S3_REGION and S3_ENDPOINT in particular used to be
+ * optional and silently default to AWS us-east-1 (see objectStorageS3.ts),
+ * which is wrong for Cloudflare R2, Backblaze B2, Oracle Cloud Object
+ * Storage, MinIO, etc. and previously only failed confusingly at upload
+ * time. Require them explicitly so a missing/wrong provider config fails at
+ * boot instead.
+ */
+const REQUIRED_ENV_VAR_MESSAGES: Partial<Record<string, string>> = {
+  APP_URL:
+    "Missing required environment variable: APP_URL (e.g. https://your-app.example.com — used for CORS, Clerk authorized parties, and OAuth redirect URIs)",
+  BASE_PATH:
+    'Missing required environment variable: BASE_PATH (required at build time by the frontend\'s Vite config; use "/" unless the app is served from a sub-path)',
+  STATIC_DIR:
+    "Missing required environment variable: STATIC_DIR (e.g. artifacts/groundworkos/dist/public — tells the API server where to serve the built frontend from)",
+  S3_REGION:
+    'Missing required environment variable: S3_REGION. This does NOT default to your provider\'s region — an unset S3_REGION silently falls back to AWS "us-east-1", which is wrong for Cloudflare R2, Backblaze B2, Oracle Cloud Object Storage, MinIO, etc., and fails confusingly at upload time rather than at boot. Set it to the region value your object storage provider expects.',
+  S3_ENDPOINT:
+    "Missing required environment variable: S3_ENDPOINT. This does NOT default to your provider's endpoint — an unset S3_ENDPOINT silently falls back to the AWS S3 default, which is wrong for Cloudflare R2, Backblaze B2, Oracle Cloud Object Storage, MinIO, etc., and fails confusingly at upload time rather than at boot. Set it to your provider's S3-compatible endpoint URL.",
+};
 
 /**
  * A Clerk publishable key is `pk_(test|live)_` followed by the base64
@@ -54,7 +82,10 @@ const errors: string[] = [];
 
 for (const name of REQUIRED_ENV_VARS) {
   if (!process.env[name]) {
-    errors.push(`Missing required environment variable: ${name}`);
+    errors.push(
+      REQUIRED_ENV_VAR_MESSAGES[name] ??
+        `Missing required environment variable: ${name}`,
+    );
   }
 }
 
