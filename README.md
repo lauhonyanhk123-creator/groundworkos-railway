@@ -151,14 +151,14 @@ Roles are stored in Clerk `publicMetadata.role`. Set via the **Settings → User
 | `manager` | All operational features: jobs, quotes, invoices, reports, settings |
 | `foreman` | Dashboard, jobs, schedule, timesheets                               |
 
-**First-time setup:** Set your own account to `admin` via the Clerk dashboard before logging in.
+**First-time setup (bootstrap):** A user with no role set defaults to `foreman` — nobody, including the very first signup, ever gets `admin` automatically. The very first admin is created through a one-time, self-service bootstrap: while the workspace has zero admins, the **Settings → Users** page shows a "Make me admin" button for any signed-in user instead of the normal admin-only view. Clicking it calls `POST /api/admin/bootstrap`, which sets your own `publicMetadata.role` to `admin` — but only if no admin exists yet (checked server-side via `GET /api/admin/bootstrap-status`); once any account has `role: "admin"`, bootstrap permanently stops working and all further role changes must go through that admin's **Settings → Users** page. If you're locked out entirely (e.g. restoring from a backup with no admins left), you can also set `{ "role": "admin" }` on an account's Public metadata directly in the Clerk dashboard.
 
 ---
 
 ## First Login Checklist
 
 1. Sign up via the app — you'll be assigned `foreman` role by default
-2. Go to [dashboard.clerk.com](https://dashboard.clerk.com) → Users → your account → Public metadata → set `{ "role": "admin" }`
+2. Go to **Settings → Users** — since no admin exists yet, you'll see a "Make me admin" button; click it to bootstrap yourself as the first admin
 3. Refresh the app — full sidebar now visible
 4. Go to **Settings** and complete your company details (name, address, VAT number, bank details)
 5. Invite any additional users and set their roles from **Settings → Users**
