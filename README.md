@@ -54,10 +54,15 @@ Manage jobs, CIS compliance, quotes, invoices, plant, subcontractors, timesheets
 Create a `.env` file in the project root (or set these as secrets in your host):
 
 ```env
+# Core (required)
+PORT=3001
+NODE_ENV=production
+
 # Database
 DATABASE_URL=postgresql://user:password@host:5432/groundworkos
 
-# Clerk Auth (get from dashboard.clerk.com)
+# Clerk Auth (get from dashboard.clerk.com) — email-only sign-in;
+# no Google or other social/OAuth sign-in is configured.
 CLERK_PUBLISHABLE_KEY=pk_live_...
 CLERK_SECRET_KEY=sk_live_...
 VITE_CLERK_PUBLISHABLE_KEY=pk_live_...
@@ -78,6 +83,16 @@ S3_REGION=us-east-1
 S3_ENDPOINT=https://s3.us-east-1.amazonaws.com
 S3_ACCESS_KEY_ID=your-s3-access-key
 S3_SECRET_ACCESS_KEY=your-s3-secret-key
+# S3_FORCE_PATH_STYLE=true    # optional, defaults to true (path-style addressing)
+# S3_PUBLIC_PREFIX=public/    # optional, defaults to public/
+
+# Logging (optional)
+# LOG_LEVEL=info
+
+# Sign-up restriction backstop (optional — on top of Clerk Dashboard →
+# Configure → Restrictions, which is the primary control)
+# CLERK_WEBHOOK_SIGNING_SECRET=whsec_...
+# SIGNUP_ALLOWED_EMAIL_DOMAINS=yourcompany.co.uk
 
 # Email (optional — get from resend.com)
 RESEND_API_KEY=re_...
@@ -103,7 +118,7 @@ FREEAGENT_CLIENT_SECRET=...
 FREEAGENT_REDIRECT_URI=...
 ```
 
-`DATABASE_URL`, the Clerk keys, `APP_URL`, `BASE_PATH`, `STATIC_DIR` and the five `S3_*` object storage variables are all required — the app will not build or boot correctly without them. Everything below the object storage block (email, Xero, QuickBooks, Sage, FreeAgent) is optional. See **[RAILWAY.md](./RAILWAY.md)** for how these map to Railway service variables, and each accounting integration is optional and independent — set only the credentials for the providers this client actually uses. Every provider uses self-service OAuth: the client logs in with their own accounting software account and authorises access, so you never need to obtain or hold their accounting API keys.
+`PORT`, `DATABASE_URL`, the Clerk keys, `APP_URL`, `BASE_PATH`, `STATIC_DIR` and the five `S3_*` object storage variables are all required — the app will not build or boot correctly without them (`PORT` has no built-in fallback; Railway supplies it automatically, but self-hosted setups must set it). Everything below the object storage block (S3 addressing tweaks, logging, sign-up restriction, email, Xero, QuickBooks, Sage, FreeAgent) is optional. `NODE_ENV` isn't enforced at boot but should be set to `production` in any real deployment — it controls log formatting and is a hard safety check in the local demo-data seed script (`pnpm --filter @workspace/api-server run seed`, which also requires `SEED_CONFIRM_NON_LOCAL_DB=yes` to run against any non-localhost `DATABASE_URL`). See **[RAILWAY.md](./RAILWAY.md)** for how these map to Railway service variables, and each accounting integration is optional and independent — set only the credentials for the providers this client actually uses. Every provider uses self-service OAuth: the client logs in with their own accounting software account and authorises access, so you never need to obtain or hold their accounting API keys.
 
 ### Install & Run
 
@@ -118,7 +133,7 @@ pnpm --filter @workspace/db run push
 pnpm -r --parallel run dev
 ```
 
-The frontend runs on port `5173` (or `$PORT` in production), the API server on `3001`.
+Both the frontend dev server and the API server require `PORT` to be set (there's no built-in default) — e.g. `PORT=5173` for the frontend and `PORT=3001` for the API server when running them side by side locally.
 
 ---
 
@@ -142,6 +157,8 @@ The frontend runs on port `5173` (or `$PORT` in production), the API server on `
 ---
 
 ## User Roles
+
+Sign-in is email-only (Clerk's email code / password flows) — no Google or other social/OAuth sign-in provider is enabled. GroundworkOS is invite-only by default; see `CLERK_WEBHOOK_SIGNING_SECRET` / `SIGNUP_ALLOWED_EMAIL_DOMAINS` above and the Clerk Dashboard's Restrictions setting.
 
 Roles are stored in Clerk `publicMetadata.role`. Set via the **Settings → Users** page (admin only) or directly in the Clerk dashboard.
 
