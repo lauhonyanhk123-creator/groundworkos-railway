@@ -14,6 +14,57 @@ import {
 } from "@workspace/db";
 import { sql } from "drizzle-orm";
 
+/**
+ * Hard safeguard: this script wipes-in fixed demo data and must never touch
+ * a real database. NODE_ENV=production is refused outright with no
+ * override. Any other environment must point DATABASE_URL at a recognized
+ * local/dev host; anything else needs the SEED_CONFIRM_NON_LOCAL_DB=yes
+ * escape hatch, so seeding a non-local database (a shared staging DB
+ * someone forgot to set NODE_ENV=production on, for example) takes a
+ * deliberate, explicit choice instead of happening by accident.
+ */
+const LOCAL_DB_HOSTS = new Set([
+  "localhost",
+  "127.0.0.1",
+  "::1",
+  "host.docker.internal",
+]);
+
+function assertSafeToSeed() {
+  if (process.env.NODE_ENV === "production") {
+    console.error(
+      "Refusing to seed: NODE_ENV is 'production'. This script inserts fixed " +
+        "demo data and can never run against a production database.",
+    );
+    process.exit(1);
+  }
+
+  const databaseUrl = process.env.DATABASE_URL ?? "";
+  let hostname = "";
+  try {
+    hostname = new URL(databaseUrl).hostname;
+  } catch {
+    // Missing/malformed URL: falls through to the allowlist check below,
+    // which will reject the empty hostname.
+  }
+
+  if (
+    !LOCAL_DB_HOSTS.has(hostname) &&
+    process.env.SEED_CONFIRM_NON_LOCAL_DB !== "yes"
+  ) {
+    console.error(
+      `Refusing to seed: DATABASE_URL host "${hostname || "(unparseable)"}" ` +
+        "is not in the local/development allowlist " +
+        `(${Array.from(LOCAL_DB_HOSTS).join(", ")}).\n` +
+        "If you are certain this is not a production or shared database, " +
+        "re-run with SEED_CONFIRM_NON_LOCAL_DB=yes to proceed.",
+    );
+    process.exit(1);
+  }
+}
+
+assertSafeToSeed();
+
 const todayDate = new Date().toISOString().split("T")[0];
 function futureDate(offsetDays: number) {
   const d = new Date();
