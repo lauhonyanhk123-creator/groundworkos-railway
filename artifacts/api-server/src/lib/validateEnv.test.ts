@@ -10,7 +10,12 @@ vi.mock("./logger", () => ({ logger: { error: errorMock } }));
 const BASE_ENV = {
   PORT: "3000",
   DATABASE_URL: "postgres://localhost/test",
+  APP_URL: "https://example.com",
+  BASE_PATH: "/",
+  STATIC_DIR: "artifacts/groundworkos/dist/public",
   S3_BUCKET: "bucket",
+  S3_REGION: "us-east-1",
+  S3_ENDPOINT: "https://s3.us-east-1.amazonaws.com",
   S3_ACCESS_KEY_ID: "id",
   S3_SECRET_ACCESS_KEY: "secret",
 };
@@ -92,8 +97,7 @@ describe("validateEnv - CLERK_PUBLISHABLE_KEY", () => {
   it("rejects a decoded body missing the trailing $", async () => {
     // pk_test_<base64("valid-app.clerk.accounts.dev")>, no trailing $
     await loadValidateEnv({
-      CLERK_PUBLISHABLE_KEY:
-        "pk_test_dmFsaWQtYXBwLmNsZXJrLmFjY291bnRzLmRldg==",
+      CLERK_PUBLISHABLE_KEY: "pk_test_dmFsaWQtYXBwLmNsZXJrLmFjY291bnRzLmRldg==",
       CLERK_SECRET_KEY: VALID_SECRET_KEY,
     });
 
@@ -162,6 +166,65 @@ describe("validateEnv - missing variables", () => {
     expect(exitSpy).toHaveBeenCalledWith(1);
     expect(errorMock).toHaveBeenCalledWith(
       expect.stringContaining("DATABASE_URL"),
+    );
+  });
+
+  it("fails once with the full list when several required variables are absent", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      APP_URL: undefined,
+      S3_REGION: undefined,
+      S3_ENDPOINT: undefined,
+    });
+
+    expect(exitSpy).toHaveBeenCalledTimes(1);
+    expect(errorMock).toHaveBeenCalledWith(expect.stringContaining("APP_URL"));
+    expect(errorMock).toHaveBeenCalledWith(
+      expect.stringContaining("S3_REGION"),
+    );
+    expect(errorMock).toHaveBeenCalledWith(
+      expect.stringContaining("S3_ENDPOINT"),
+    );
+  });
+
+  it.each(["APP_URL", "BASE_PATH", "STATIC_DIR"])(
+    "fails when %s is absent",
+    async (name) => {
+      await loadValidateEnv({
+        CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+        CLERK_SECRET_KEY: VALID_SECRET_KEY,
+        [name]: undefined,
+      });
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+      expect(errorMock).toHaveBeenCalledWith(expect.stringContaining(name));
+    },
+  );
+
+  it("explains that S3_REGION does not default to the provider's region when absent", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      S3_REGION: undefined,
+    });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorMock).toHaveBeenCalledWith(
+      expect.stringContaining("does NOT default to your provider's region"),
+    );
+  });
+
+  it("explains that S3_ENDPOINT does not default to the provider's endpoint when absent", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      S3_ENDPOINT: undefined,
+    });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorMock).toHaveBeenCalledWith(
+      expect.stringContaining("does NOT default to your provider's endpoint"),
     );
   });
 });
