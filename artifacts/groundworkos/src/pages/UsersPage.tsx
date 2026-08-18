@@ -16,6 +16,13 @@ interface ClerkUser {
   lastSignInAt: string | null;
 }
 
+interface Invitation {
+  id: string;
+  email: string;
+  role: Role;
+  createdAt: string;
+}
+
 const ROLE_COLORS: Record<Role, { bg: string; text: string; border: string }> =
   {
     admin: { bg: "#fef3c7", text: "#92400e", border: "rgba(146,64,14,0.2)" },
@@ -30,6 +37,11 @@ export function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [bootstrapping, setBootstrapping] = useState(false);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<Role>("foreman");
+  const [inviting, setInviting] = useState(false);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
   // Only relevant for non-admins: true when the workspace has no admin yet,
   // which unlocks the one-time "make me admin" self-promotion screen below.
   const [noAdminYet, setNoAdminYet] = useState(false);
@@ -60,17 +72,67 @@ export function UsersPage() {
     }
   }, []);
 
+  const fetchInvitations = useCallback(async () => {
+    try {
+      const r = await fetch(`${BASE}/api/admin/invitations`);
+      if (!r.ok) return;
+      setInvitations(await r.json());
+    } catch {
+      // Non-critical: the invite panel just shows an empty pending list.
+    }
+  }, []);
+
   useEffect(() => {
     // Admins see the full member list; everyone else only needs to know
     // whether bootstrap is available, so we skip fetching the (admin-only)
     // user list entirely for them.
     if (isAtLeast(role, "admin")) {
       fetchUsers();
+      fetchInvitations();
     } else {
       setLoading(false);
       checkBootstrap();
     }
-  }, [role, fetchUsers, checkBootstrap]);
+  }, [role, fetchUsers, fetchInvitations, checkBootstrap]);
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    try {
+      const r = await fetch(`${BASE}/api/admin/invitations`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
+      });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || "Failed to send invitation");
+      toast.success(`Invitation sent to ${inviteEmail.trim()}`);
+      setInviteEmail("");
+      setInviteRole("foreman");
+      fetchInvitations();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to send invitation");
+    } finally {
+      setInviting(false);
+    }
+  }
+
+  async function handleRevoke(id: string) {
+    setRevokingId(id);
+    try {
+      const r = await fetch(`${BASE}/api/admin/invitations/${id}`, {
+        method: "DELETE",
+      });
+      if (!r.ok) throw new Error();
+      setInvitations((prev) => prev.filter((inv) => inv.id !== id));
+      toast.success("Invitation revoked");
+    } catch {
+      toast.error("Failed to revoke invitation");
+    } finally {
+      setRevokingId(null);
+    }
+  }
 
   /** Self-promotes the current user to admin, then reloads so Clerk's cached role updates everywhere. */
   async function handleBootstrap() {
@@ -203,8 +265,180 @@ export function UsersPage() {
           }}
         >
           Manage team access and roles. Changes take effect on next sign-in.
+          Sign-up is invite-only — new teammates must be invited below.
         </p>
       </div>
+
+      <form
+        onSubmit={handleInvite}
+        style={{
+          border: "1px solid #d9d4ce",
+          borderRadius: 10,
+          backgroundColor: "#fafaf8",
+          padding: 16,
+          marginBottom: 20,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 10,
+          alignItems: "flex-end",
+        }}
+      >
+        <div style={{ flex: "1 1 220px", display: "grid", gap: 4 }}>
+          <label
+            style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontWeight: 600,
+              fontSize: 11,
+              color: "#7a7469",
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+            }}
+          >
+            Invite a teammate
+          </label>
+          <input
+            type="email"
+            required
+            placeholder="name@company.com"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 13,
+              padding: "8px 10px",
+              borderRadius: 6,
+              border: "1px solid #d9d4ce",
+              backgroundColor: "#ffffff",
+              color: "#181410",
+            }}
+          />
+        </div>
+        <select
+          value={inviteRole}
+          onChange={(e) => setInviteRole(e.target.value as Role)}
+          style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 12,
+            padding: "9px 8px",
+            borderRadius: 6,
+            border: "1px solid #d9d4ce",
+            backgroundColor: "#ffffff",
+            color: "#181410",
+            cursor: "pointer",
+          }}
+        >
+          <option value="foreman">Foreman</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+        </select>
+        <button
+          type="submit"
+          disabled={inviting}
+          style={{
+            padding: "9px 18px",
+            borderRadius: 6,
+            backgroundColor: "#1b5e78",
+            color: "#fff",
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontWeight: 600,
+            fontSize: 12,
+            border: "none",
+            cursor: inviting ? "default" : "pointer",
+            opacity: inviting ? 0.6 : 1,
+          }}
+        >
+          {inviting ? "Sending..." : "Send invite"}
+        </button>
+      </form>
+
+      {invitations.length > 0 && (
+        <div
+          style={{
+            border: "1px solid #d9d4ce",
+            borderRadius: 10,
+            backgroundColor: "#fafaf8",
+            overflow: "hidden",
+            marginBottom: 20,
+          }}
+        >
+          <div
+            style={{
+              padding: "10px 16px",
+              borderBottom: "1px solid #ece8e3",
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontWeight: 600,
+                fontSize: 11,
+                color: "#7a7469",
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Pending invitations
+            </span>
+          </div>
+          {invitations.map((inv, idx) => (
+            <div
+              key={inv.id}
+              style={{
+                padding: "12px 16px",
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                borderBottom:
+                  idx < invitations.length - 1 ? "1px solid #ece8e3" : "none",
+              }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span
+                  style={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 12,
+                    color: "#181410",
+                  }}
+                >
+                  {inv.email}
+                </span>
+              </div>
+              <span
+                style={{
+                  padding: "3px 10px",
+                  borderRadius: 99,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  backgroundColor: ROLE_COLORS[inv.role].bg,
+                  color: ROLE_COLORS[inv.role].text,
+                  border: `1px solid ${ROLE_COLORS[inv.role].border}`,
+                }}
+              >
+                {ROLE_LABELS[inv.role]}
+              </span>
+              <button
+                onClick={() => handleRevoke(inv.id)}
+                disabled={revokingId === inv.id}
+                style={{
+                  padding: "5px 12px",
+                  borderRadius: 6,
+                  backgroundColor: "transparent",
+                  color: "#c13a2a",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontWeight: 600,
+                  fontSize: 11,
+                  border: "1px solid rgba(193,58,42,0.3)",
+                  cursor: revokingId === inv.id ? "default" : "pointer",
+                  opacity: revokingId === inv.id ? 0.5 : 1,
+                }}
+              >
+                {revokingId === inv.id ? "Revoking..." : "Revoke"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ display: "grid", gap: 12 }}>

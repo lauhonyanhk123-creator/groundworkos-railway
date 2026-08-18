@@ -182,9 +182,23 @@ function SignInPage() {
 function SignUpPage() {
   return (
     <div
-      className="flex min-h-dvh items-center justify-center px-4"
+      className="flex min-h-dvh flex-col items-center justify-center gap-4 px-4"
       style={{ backgroundColor: "#f0ede8" }}
     >
+      <p
+        style={{
+          maxWidth: 440,
+          textAlign: "center",
+          fontSize: 13,
+          color: "#7a7469",
+          fontFamily: "'Inter', sans-serif",
+          lineHeight: 1.6,
+        }}
+      >
+        GroundworkOS is invite-only. If you've received an invitation email,
+        use the same email address below to finish setting up your account.
+        Otherwise, ask your admin to invite you from Settings &rarr; Users.
+      </p>
       <SignUp
         routing="path"
         path={`${basePath}/sign-up`}

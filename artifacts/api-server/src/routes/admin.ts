@@ -91,6 +91,74 @@ router.patch("/admin/users/:id/role", async (req, res) => {
   }
 });
 
+// --- Invitations (admin only) ---
+//
+// GroundworkOS is a single-company, invite-only instance (see Clerk
+// Dashboard -> Restrictions, where public sign-up is disabled). This is the
+// in-app way for an admin to actually invite a teammate instead of using the
+// Clerk Dashboard directly. The invited role is stamped into the
+// invitation's publicMetadata, which Clerk copies onto the user's own
+// publicMetadata once they accept and sign up - so a newly-invited teammate
+// already has the right role from their very first sign-in.
+
+router.get("/admin/invitations", async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+  try {
+    const response = await clerkClient.invitations.getInvitationList({
+      status: "pending",
+      orderBy: "-created_at",
+    });
+    const invitations = response.data.map((inv) => ({
+      id: inv.id,
+      email: inv.emailAddress,
+      role: resolveRole((inv.publicMetadata as Record<string, unknown> | null)?.role),
+      createdAt: new Date(inv.createdAt).toISOString(),
+    }));
+    res.json(invitations);
+  } catch (err: any) {
+    res
+      .status(500)
+      .json({ error: err.message ?? "Failed to fetch invitations" });
+  }
+});
+
+router.post("/admin/invitations", async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+  const { email, role } = req.body;
+  if (typeof email !== "string" || !email.includes("@")) {
+    return res
+      .status(400)
+      .json({ error: "A valid email address is required" });
+  }
+  if (!isRole(role)) {
+    return res.status(400).json({ error: "Invalid role" });
+  }
+  try {
+    await clerkClient.invitations.createInvitation({
+      emailAddress: email,
+      publicMetadata: { role },
+      notify: true,
+    });
+    return res.json({ ok: true });
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json({ error: err.message ?? "Failed to send invitation" });
+  }
+});
+
+router.delete("/admin/invitations/:id", async (req, res) => {
+  if (!(await requireAdmin(req, res))) return;
+  try {
+    await clerkClient.invitations.revokeInvitation(req.params.id);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    return res
+      .status(500)
+      .json({ error: err.message ?? "Failed to revoke invitation" });
+  }
+});
+
 // --- First-time admin bootstrap ---
 //
 // Unset roles now default to foreman (the lowest privilege), so nobody -

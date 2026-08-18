@@ -72,6 +72,23 @@ if (secretKey && !isValidSecretKey(secretKey)) {
   );
 }
 
+/**
+ * Optional: only relevant if the Clerk webhook (routes/clerk_webhook.ts) is
+ * in use for the SIGNUP_ALLOWED_EMAIL_DOMAINS backstop. Not in
+ * REQUIRED_ENV_VARS since most deployments rely on Clerk Dashboard
+ * Restrictions alone and never set it.
+ */
+const WEBHOOK_SIGNING_SECRET_RE = /^whsec_.+$/;
+const webhookSigningSecret = process.env.CLERK_WEBHOOK_SIGNING_SECRET;
+if (
+  webhookSigningSecret &&
+  !WEBHOOK_SIGNING_SECRET_RE.test(webhookSigningSecret)
+) {
+  errors.push(
+    'Invalid CLERK_WEBHOOK_SIGNING_SECRET: expected "whsec_" followed by the signing secret value',
+  );
+}
+
 if (errors.length > 0) {
   for (const error of errors) {
     logger.error(error);
