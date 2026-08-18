@@ -82,11 +82,14 @@ not need to set it yourself.
 
 1. Trigger a deploy (pushing to your connected branch does this
    automatically).
-2. Once it's live, run the database migration once using Railway's CLI or
-   the service's one-off command runner:
-   railway run pnpm --filter @workspace/db run push
-   (use push-force instead of push if this is a brand-new, empty database and
-   you want to skip confirmation prompts).
+2. Once it's live, apply the database migrations using Railway's CLI or the
+   service's one-off command runner:
+   railway run pnpm --filter @workspace/db run migrate
+   This runs the versioned SQL migration files in lib/db/migrations against
+   the connected database, recording which ones have already been applied.
+   Unlike `drizzle-kit push`, it never diffs against or drops live schema, so
+   it's the command to use here — this database holds client CIS and invoice
+   records.
 
 ## Step 5 — First login and admin user
 
