@@ -4,9 +4,14 @@
  * Roles are stored in Clerk publicMetadata.role and are read independently
  * on the frontend (hooks/useRole.ts) and backend (lib/auth.ts, routes/admin.ts).
  * This module is the single source of truth for the Role type and the
- * "no explicit role defaults to admin" rule - any change here applies
+ * "no explicit role defaults to foreman" rule - any change here applies
  * everywhere it's imported, since a mismatch between frontend and backend
  * checks has been a real bug source.
+ *
+ * Because the default is the lowest-privilege role, nobody ever gets admin
+ * just by signing up. The one-time bootstrap flow in routes/admin.ts
+ * (adminExists / POST /admin/bootstrap) is how the very first admin is
+ * created instead - see that file for details.
  */
 
 export type Role = "foreman" | "manager" | "admin";
@@ -26,30 +31,11 @@ export function isRole(value: unknown): value is Role {
  * Resolves a raw, possibly-missing/unrecognized role value (e.g. read
  * straight off Clerk publicMetadata.role) to a concrete Role: a recognized
  * value is used as-is, anything else (missing, or unrecognized) resolves to
- * admin. This is the "no explicit role defaults to admin" rule - a
- * deliberate choice for a trusted, single-company deployment, not an
- * oversight - used to compute a user's effective role for access checks.
+ * foreman, the lowest-privilege role. This is the "no explicit role defaults
+ * to foreman" rule - so a stranger reaching a public sign-up page never
+ * lands with admin access - used to compute a user's effective role for
+ * access checks.
  */
 export function resolveRole(claimed: unknown): Role {
-  return isRole(claimed) ? claimed : "admin";
-}
-
-/**
- * True if `claimed` counts as an admin for boolean guard checks (e.g. the
- * bootstrap admin-existence check): an explicit "admin", or a role that is
- * completely unset. Unlike resolveRole(), an unrecognized/garbage value is
- * deliberately NOT treated as admin here.
- */
-export function isUnsetOrAdmin(claimed: unknown): boolean {
-  return claimed === undefined || claimed === "admin";
-}
-
-/**
- * True if `claimed` is an explicitly-set role other than admin - i.e. the
- * caller should be rejected from an admin-only action. A missing/falsy role
- * is not rejected, since it defaults to admin under the "no explicit role
- * defaults to admin" rule.
- */
-export function hasExplicitNonAdminRole(claimed: unknown): boolean {
-  return Boolean(claimed) && claimed !== "admin";
+  return isRole(claimed) ? claimed : "foreman";
 }

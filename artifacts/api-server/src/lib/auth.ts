@@ -24,9 +24,12 @@ export async function getUserRole(req: Request): Promise<Role> {
 
   const auth = getAuth(req);
   const userId = req.userId ?? auth.userId ?? undefined;
-  // Users with no explicit role default to admin, so brand-new signups have
-  // full access out of the box. An explicitly-set role always takes precedence.
-  let role: Role = "admin";
+  // Users with no explicit role default to foreman (lowest privilege), so a
+  // stranger who reaches a public sign-up page never lands with elevated
+  // access. An explicitly-set role always takes precedence. The first admin
+  // is created via the one-time bootstrap flow in routes/admin.ts, not via
+  // this default.
+  let role: Role = "foreman";
   if (userId) {
     // A Clerk lookup failure is intentionally NOT swallowed here. Falling back
     // to "admin" on error would let an explicitly-demoted manager/foreman

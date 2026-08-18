@@ -5,8 +5,10 @@ export type { Role };
 
 export function useRole(): Role {
   const { user } = useUser();
-  // New users have no role set yet: default them to admin so the first
-  // person(s) to sign up have full access out of the box.
+  // New users have no role set yet: default them to foreman (lowest
+  // privilege) so a stranger who reaches a public sign-up page never lands
+  // with elevated access. The first admin is created via the one-time
+  // bootstrap flow (see routes/admin.ts on the backend), not via this default.
   return resolveRole(user?.publicMetadata?.role);
 }
 

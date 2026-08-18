@@ -26,15 +26,15 @@ beforeEach(() => {
 });
 
 describe("getUserRole", () => {
-  it("defaults to admin when there is no authenticated user (no-role-defaults-to-admin)", async () => {
-    await expect(getUserRole(makeReq())).resolves.toBe("admin");
+  it("defaults to foreman when there is no authenticated user (no-role-defaults-to-foreman)", async () => {
+    await expect(getUserRole(makeReq())).resolves.toBe("foreman");
     expect(clerkClient.users.getUser).not.toHaveBeenCalled();
   });
 
-  it("defaults to admin when Clerk has no explicit role for the user", async () => {
+  it("defaults to foreman when Clerk has no explicit role for the user", async () => {
     getAuth.mockReturnValue({ userId: "user_1" });
     clerkClient.users.getUser.mockResolvedValue({ publicMetadata: {} });
-    await expect(getUserRole(makeReq())).resolves.toBe("admin");
+    await expect(getUserRole(makeReq())).resolves.toBe("foreman");
   });
 
   it("uses the explicit role stored in Clerk publicMetadata", async () => {
@@ -84,14 +84,14 @@ describe("requireRole", () => {
     expect(res.status).toHaveBeenCalledWith(403);
   });
 
-  it("grants an admin-gated route to a user with no explicit role (no-role-defaults-to-admin)", async () => {
+  it("rejects an admin-gated route for a user with no explicit role (no-role-defaults-to-foreman)", async () => {
     getAuth.mockReturnValue({ userId: "user_1" });
     clerkClient.users.getUser.mockResolvedValue({ publicMetadata: {} });
     const res = makeRes();
     const next = vi.fn();
     await requireRole("admin")(makeReq(), res, next);
-    expect(next).toHaveBeenCalledOnce();
-    expect(res.status).not.toHaveBeenCalled();
+    expect(next).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
   });
 
   it("fails closed with 503 (not a silent admin fallback) when the role can't be verified", async () => {

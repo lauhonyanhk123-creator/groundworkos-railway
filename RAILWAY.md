@@ -90,10 +90,22 @@ not need to set it yourself.
 
 ## Step 5 — First login and admin user
 
+New accounts default to the `foreman` role (lowest privilege) — nobody gets
+`admin` just by signing up, including the first user. Instead:
+
 1. Visit your Railway domain and sign up through the app.
-2. In the Clerk dashboard, go to Users, open your account, and set Public
-   metadata to { "role": "admin" }.
-3. Sign out and back in — the full sidebar should now be visible.
+2. Go to **Settings → Users**. Since the workspace has no admin yet, you'll
+   see a "Make me admin" button in place of the normal admin-only view.
+3. Click it — this calls `POST /api/admin/bootstrap`, which sets your own
+   Clerk `publicMetadata.role` to `admin`, but only while no admin exists
+   yet. Once you're the admin, this bootstrap endpoint stops working for
+   everyone else, and further role changes go through the same
+   **Settings → Users** page.
+4. Refresh — the full sidebar should now be visible.
+
+Fallback: if you're ever locked out with no admin account at all (e.g.
+restoring from a backup), you can set `{ "role": "admin" }` on an account's
+Public metadata directly in the Clerk dashboard instead.
 
 ## Step 6 — Custom domain (optional)
 
