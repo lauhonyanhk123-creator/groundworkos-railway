@@ -68,22 +68,31 @@ app.use(
  */
 app.use(cors({ credentials: true, origin: process.env.APP_URL ?? true }));
 /**
- * Body parsers, but skip the storage upload relay (PUT
- * /api/storage/uploads/direct/:id) so its raw body streams untouched to object
- * storage — otherwise a file whose Content-Type is application/json (or
- * form-urlencoded) would be drained here before it reaches the relay handler.
+ * Body parsers, but skip routes that need their raw, unparsed body:
+ * - the storage upload relay (PUT /api/storage/uploads/direct/:id) streams
+ *   its body untouched to object storage — otherwise a file whose
+ *   Content-Type is application/json (or form-urlencoded) would be drained
+ *   here before it reaches the relay handler.
+ * - the Clerk webhook (POST /api/webhooks/clerk) needs the exact original
+ *   bytes to verify its svix signature (see routes/clerk_webhook.ts); it gets
+ *   express.raw() below instead.
  */
-const skipUploadRelay =
+const needsRawBody = (req: { method: string; path: string }): boolean =>
+  (req.method === "PUT" && req.path.includes("/storage/uploads/direct/")) ||
+  req.path === "/api/webhooks/clerk";
+
+const skipRawBodyRoutes =
   (handler: RequestHandler): RequestHandler =>
   (req, res, next) => {
-    if (req.method === "PUT" && req.path.includes("/storage/uploads/direct/")) {
+    if (needsRawBody(req)) {
       return next();
     }
     return handler(req, res, next);
   };
 
-app.use(skipUploadRelay(express.json()));
-app.use(skipUploadRelay(express.urlencoded({ extended: true })));
+app.use(skipRawBodyRoutes(express.json()));
+app.use(skipRawBodyRoutes(express.urlencoded({ extended: true })));
+app.use("/api/webhooks/clerk", express.raw({ type: "application/json" }));
 
 app.use(
   clerkMiddleware({
@@ -122,6 +131,7 @@ app.use(
     "/api/quickbooks/callback",
     "/api/sage/callback",
     "/api/freeagent/callback",
+    "/api/webhooks/clerk",
   ],
   publicRouteLimiter,
 );

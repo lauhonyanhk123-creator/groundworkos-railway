@@ -30,6 +30,7 @@ import timesheetsRouter from "./timesheets";
 import purchaseOrdersRouter from "./purchase_orders";
 import emailRouter from "./email";
 import auditRouter from "./audit";
+import clerkWebhookRouter from "./clerk_webhook";
 
 const router: IRouter = Router();
 
@@ -40,6 +41,9 @@ const PUBLIC_PATHS = [
   "/sage/callback",
   "/freeagent/callback",
   "/portal",
+  // Server-to-server from Clerk, not a signed-in user - authenticated by
+  // svix signature verification inside the handler instead of a session.
+  "/webhooks/clerk",
 ];
 
 function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -83,5 +87,6 @@ router.use(timesheetsRouter);
 router.use(purchaseOrdersRouter);
 router.use(emailRouter);
 router.use(auditRouter);
+router.use(clerkWebhookRouter);
 
 export default router;
