@@ -91,11 +91,6 @@ const clerkAppearance = {
       letterSpacing: "-0.02em",
     },
     headerSubtitle: { color: "#7a7469", fontSize: "14px" },
-    socialButtonsBlockButtonText: {
-      color: "#181410",
-      fontWeight: "500",
-      fontSize: "14px",
-    },
     formFieldLabel: {
       color: "#4a4540",
       fontWeight: "600",
@@ -110,11 +105,6 @@ const clerkAppearance = {
     formFieldSuccessText: { color: "#2a6e45" },
     alertText: { color: "#c13a2a" },
     logoBox: "hidden",
-    socialButtonsBlockButton: {
-      border: "1px solid #d9d4ce",
-      backgroundColor: "#ffffff",
-      borderRadius: "6px",
-    },
     formButtonPrimary: {
       backgroundColor: "#1b5e78",
       color: "#ffffff",
