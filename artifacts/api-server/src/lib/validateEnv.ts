@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { parseAllowedDomains } from "./signupPolicy";
 
 /**
  * Every env var the server cannot run without. Checked together, up front,
@@ -117,6 +118,25 @@ if (
 ) {
   errors.push(
     'Invalid CLERK_WEBHOOK_SIGNING_SECRET: expected "whsec_" followed by the signing secret value',
+  );
+}
+
+/**
+ * If SIGNUP_ALLOWED_EMAIL_DOMAINS is set, the Clerk webhook
+ * (routes/clerk_webhook.ts) can't enforce it without
+ * CLERK_WEBHOOK_SIGNING_SECRET to verify incoming webhook signatures - the
+ * allowlist would silently never apply. That combination used to only log a
+ * warning at boot, which is easy to miss in a log stream; fail loudly
+ * instead.
+ */
+const allowedDomains = parseAllowedDomains(
+  process.env.SIGNUP_ALLOWED_EMAIL_DOMAINS,
+);
+if (allowedDomains.length > 0 && !process.env.CLERK_WEBHOOK_SIGNING_SECRET) {
+  errors.push(
+    "SIGNUP_ALLOWED_EMAIL_DOMAINS is set but CLERK_WEBHOOK_SIGNING_SECRET is not - " +
+      "incoming webhooks can't be verified, so the domain allowlist would never be enforced. " +
+      "Set CLERK_WEBHOOK_SIGNING_SECRET or unset SIGNUP_ALLOWED_EMAIL_DOMAINS.",
   );
 }
 

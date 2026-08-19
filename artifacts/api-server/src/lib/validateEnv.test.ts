@@ -228,3 +228,55 @@ describe("validateEnv - missing variables", () => {
     );
   });
 });
+
+describe("validateEnv - SIGNUP_ALLOWED_EMAIL_DOMAINS / CLERK_WEBHOOK_SIGNING_SECRET", () => {
+  it("fails when the allowlist is set without a webhook signing secret", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      SIGNUP_ALLOWED_EMAIL_DOMAINS: "example.com",
+      CLERK_WEBHOOK_SIGNING_SECRET: undefined,
+    });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorMock).toHaveBeenCalledWith(
+      expect.stringContaining("SIGNUP_ALLOWED_EMAIL_DOMAINS"),
+    );
+  });
+
+  it("passes when the allowlist is set alongside a webhook signing secret", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      SIGNUP_ALLOWED_EMAIL_DOMAINS: "example.com",
+      CLERK_WEBHOOK_SIGNING_SECRET: "whsec_abc123",
+    });
+
+    expect(errorMock).not.toHaveBeenCalled();
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("passes when neither the allowlist nor the signing secret is set", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      SIGNUP_ALLOWED_EMAIL_DOMAINS: undefined,
+      CLERK_WEBHOOK_SIGNING_SECRET: undefined,
+    });
+
+    expect(errorMock).not.toHaveBeenCalled();
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("passes when the allowlist is set to an empty/blank value without a signing secret", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      SIGNUP_ALLOWED_EMAIL_DOMAINS: " , ",
+      CLERK_WEBHOOK_SIGNING_SECRET: undefined,
+    });
+
+    expect(errorMock).not.toHaveBeenCalled();
+    expect(exitSpy).not.toHaveBeenCalled();
+  });
+});
