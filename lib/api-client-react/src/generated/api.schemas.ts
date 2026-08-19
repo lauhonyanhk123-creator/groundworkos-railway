@@ -42,7 +42,7 @@ export interface ClientRecord {
 }
 
 export interface ClientInput {
-  id?: string;
+  id: string;
   companyName: string;
   contactName?: string;
   email?: string;
@@ -95,8 +95,8 @@ export interface JobRecord {
 }
 
 export interface JobInput {
-  id?: string;
-  jobNumber?: string;
+  id: string;
+  jobNumber: string;
   title: string;
   clientId?: string;
   type?: string;
@@ -166,8 +166,8 @@ export interface QuoteRecord {
 }
 
 export interface QuoteInput {
-  id?: string;
-  quoteNumber?: string;
+  id: string;
+  quoteNumber: string;
   clientId?: string;
   jobId?: string;
   title?: string;
@@ -224,8 +224,8 @@ export interface InvoiceRecord {
 }
 
 export interface InvoiceInput {
-  id?: string;
-  invoiceNumber?: string;
+  id: string;
+  invoiceNumber: string;
   clientId?: string;
   jobId?: string;
   quoteId?: string;
@@ -285,7 +285,7 @@ export interface SubcontractorRecord {
 }
 
 export interface SubcontractorInput {
-  id?: string;
+  id: string;
   companyName: string;
   contactName?: string;
   email?: string;
@@ -341,7 +341,7 @@ export interface DocumentRecord {
 }
 
 export interface DocumentInput {
-  id?: string;
+  id: string;
   name: string;
   type: string;
   status?: string;
@@ -390,7 +390,7 @@ export interface ScheduleEntryRecord {
 }
 
 export interface ScheduleEntryInput {
-  id?: string;
+  id: string;
   jobId?: string;
   title: string;
   startDatetime: string;
@@ -446,7 +446,7 @@ export interface PlantRecord {
 }
 
 export interface PlantInput {
-  id?: string;
+  id: string;
   name: string;
   registration?: string;
   category: string;

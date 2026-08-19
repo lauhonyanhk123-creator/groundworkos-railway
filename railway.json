@@ -6,7 +6,7 @@
   },
   "deploy": {
     "startCommand": "pnpm --filter @workspace/db run migrate && node artifacts/api-server/dist/index.mjs",
-    "healthcheckPath": "/api/healthz",
+    "healthcheckPath": "/api/readyz",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE"
   }
