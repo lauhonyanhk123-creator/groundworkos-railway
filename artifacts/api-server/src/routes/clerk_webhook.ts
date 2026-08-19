@@ -8,16 +8,14 @@ import { emailDomainAllowed, parseAllowedDomains } from "../lib/signupPolicy";
 
 const router = Router();
 
+/**
+ * validateEnv.ts fails boot if SIGNUP_ALLOWED_EMAIL_DOMAINS is set without
+ * CLERK_WEBHOOK_SIGNING_SECRET, so by the time this module runs, either the
+ * allowlist is unset or the signing secret is present.
+ */
 const allowedDomains = parseAllowedDomains(
   process.env.SIGNUP_ALLOWED_EMAIL_DOMAINS,
 );
-
-if (allowedDomains.length > 0 && !process.env.CLERK_WEBHOOK_SIGNING_SECRET) {
-  logger.warn(
-    "SIGNUP_ALLOWED_EMAIL_DOMAINS is set but CLERK_WEBHOOK_SIGNING_SECRET is not - " +
-      "incoming webhooks can't be verified, so the domain allowlist will never be enforced.",
-  );
-}
 
 /** Rebuilds the Fetch API Request verifyWebhook expects from an Express
  * request whose body was captured raw (see app.ts, which routes this path
