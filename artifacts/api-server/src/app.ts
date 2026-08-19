@@ -127,6 +127,7 @@ const publicRouteLimiter = rateLimit({
 app.use(
   [
     "/api/healthz",
+    "/api/readyz",
     "/api/xero/callback",
     "/api/quickbooks/callback",
     "/api/sage/callback",

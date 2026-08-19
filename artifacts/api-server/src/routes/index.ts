@@ -36,6 +36,7 @@ const router: IRouter = Router();
 
 const PUBLIC_PATHS = [
   "/healthz",
+  "/readyz",
   "/xero/callback",
   "/quickbooks/callback",
   "/sage/callback",
