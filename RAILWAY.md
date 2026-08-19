@@ -50,9 +50,9 @@ Database (reference the Postgres plugin's variable instead of retyping it):
 Auth (from dashboard.clerk.com) — sign-in is email-only; no Google or
 other social/OAuth sign-in provider is configured:
 
-- CLERK_PUBLISHABLE_KEY=pk_live_...
-- CLERK_SECRET_KEY=sk_live_...
-- VITE_CLERK_PUBLISHABLE_KEY=pk_live_... (same key, needed at build time)
+- CLERK*PUBLISHABLE_KEY=pk_live*...
+- CLERK*SECRET_KEY=sk_live*...
+- VITE*CLERK_PUBLISHABLE_KEY=pk_live*... (same key, needed at build time)
 
 App settings:
 
@@ -75,8 +75,8 @@ Optional:
   server-side backstop for restricting sign-up by email domain, on top of
   Clerk Dashboard → Configure → Restrictions (the primary control)
 - RESEND_API_KEY for quote/invoice emails
-- XERO_CLIENT_ID / XERO_CLIENT_SECRET / XERO_REDIRECT_URI (and the
-  equivalent QUICKBOOKS_, SAGE_, FREEAGENT_ variables) for accounting
+- XERO*CLIENT_ID / XERO_CLIENT_SECRET / XERO_REDIRECT_URI (and the
+  equivalent QUICKBOOKS*, SAGE*, FREEAGENT* variables) for accounting
   integrations — redirect URIs must point at your Railway domain, e.g.
   https://your-app.up.railway.app/api/xero/callback
 

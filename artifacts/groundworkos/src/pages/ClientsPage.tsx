@@ -216,8 +216,7 @@ export function ClientsPage() {
                     : "hover:bg-[#eeeae4]",
                 )}
                 style={{
-                  borderBottom:
-                    i < total - 1 ? "1px solid #d9d4ce" : "none",
+                  borderBottom: i < total - 1 ? "1px solid #d9d4ce" : "none",
                   borderLeft:
                     selected === client.id
                       ? "3px solid #1b5e78"
@@ -254,9 +253,7 @@ export function ClientsPage() {
                     style={{ color: "#7a7469" }}
                   >
                     <Mail className="w-3.5 h-3.5" />
-                    <span className="truncate font-mono">
-                      {client.email}
-                    </span>
+                    <span className="truncate font-mono">{client.email}</span>
                   </div>
                 )}
                 <div className="text-right hidden sm:block w-28 flex-shrink-0">

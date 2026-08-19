@@ -8,7 +8,9 @@ import { emailDomainAllowed, parseAllowedDomains } from "../lib/signupPolicy";
 
 const router = Router();
 
-const allowedDomains = parseAllowedDomains(process.env.SIGNUP_ALLOWED_EMAIL_DOMAINS);
+const allowedDomains = parseAllowedDomains(
+  process.env.SIGNUP_ALLOWED_EMAIL_DOMAINS,
+);
 
 if (allowedDomains.length > 0 && !process.env.CLERK_WEBHOOK_SIGNING_SECRET) {
   logger.warn(
