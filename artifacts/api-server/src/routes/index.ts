@@ -6,7 +6,6 @@ import {
   type NextFunction,
 } from "express";
 import { getAuth } from "@clerk/express";
-import healthRouter from "./health";
 import storageRouter from "./storage";
 import clientsRouter from "./clients";
 import jobsRouter from "./jobs";
@@ -34,9 +33,9 @@ import clerkWebhookRouter from "./clerk_webhook";
 
 const router: IRouter = Router();
 
+// /healthz and /readyz are intentionally absent: app.ts mounts healthRouter
+// ahead of the rate limiters, so those requests never reach this router.
 const PUBLIC_PATHS = [
-  "/healthz",
-  "/readyz",
   "/xero/callback",
   "/quickbooks/callback",
   "/sage/callback",
@@ -65,7 +64,6 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 router.use(requireAuth);
 
 router.use(storageRouter);
-router.use(healthRouter);
 router.use(clientsRouter);
 router.use(jobsRouter);
 router.use(quotesRouter);

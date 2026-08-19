@@ -38,7 +38,8 @@ app:
 - Start: pnpm --filter @workspace/db run migrate && node
   artifacts/api-server/dist/index.mjs — runs the database migrations before
   the server boots (see Step 4).
-- Health check: /api/healthz
+- Health check: /api/readyz (the readiness probe, which also verifies the
+  database is reachable; /api/healthz is the cheaper liveness probe)
 
 You shouldn't need to change these in the Railway dashboard, but they're
 visible under the service's Settings tab if you want to confirm.
@@ -103,7 +104,7 @@ demo-data seed script; you only set it by hand when self-hosting.)
 2. Migrations run automatically as part of the start command, before the
    server begins accepting traffic — you don't need to run them by hand.
    The start command (`pnpm --filter @workspace/db run migrate && node
-   artifacts/api-server/dist/index.mjs`) applies the versioned SQL migration
+artifacts/api-server/dist/index.mjs`) applies the versioned SQL migration
    files in lib/db/migrations against the connected database, recording
    which ones have already been applied, every time the container starts or
    restarts. Unlike `drizzle-kit push`, it never diffs against or drops live

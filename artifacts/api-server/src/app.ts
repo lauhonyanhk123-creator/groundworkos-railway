@@ -10,6 +10,7 @@ import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import router from "./routes";
+import healthRouter from "./routes/health";
 import { logger } from "./lib/logger";
 import { buildCspDirectives } from "./lib/csp";
 
@@ -104,9 +105,23 @@ app.use(
 );
 
 /**
+ * Health checks are mounted ahead of every rate limiter on purpose.
+ * /api/readyz is Railway's configured healthcheckPath (see railway.json)
+ * and /api/healthz is the liveness probe, so both are polled continuously
+ * by the platform. Sharing a limiter with the public routes below meant a
+ * slow boot or a crash loop could burn through that budget and leave
+ * Railway seeing 429s instead of the app's real health. Neither handler
+ * does meaningful work - /healthz answers from memory, /readyz runs a
+ * single `SELECT 1` - so they do not need a limiter of their own.
+ * These two paths are also the reason routes/index.ts no longer mounts
+ * healthRouter: this is their only registration.
+ */
+app.use("/api", healthRouter);
+
+/**
  * Rate limiting. A generous default limit applies across the whole API;
- * the unauthenticated public routes (health check + OAuth provider
- * callbacks) get a much tighter limit since they can be hit by anyone
+ * the unauthenticated public routes (OAuth provider callbacks + the Clerk
+ * webhook) get a much tighter limit since they can be hit by anyone
  * without any auth at all.
  */
 const defaultApiLimiter = rateLimit({
@@ -126,8 +141,6 @@ const publicRouteLimiter = rateLimit({
 
 app.use(
   [
-    "/api/healthz",
-    "/api/readyz",
     "/api/xero/callback",
     "/api/quickbooks/callback",
     "/api/sage/callback",
