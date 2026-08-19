@@ -33,7 +33,9 @@ app:
 
 - Build: pnpm install --frozen-lockfile && pnpm run build (builds every
   workspace package, including both the API server and the frontend).
-- Start: node artifacts/api-server/dist/index.mjs
+- Start: pnpm --filter @workspace/db run migrate && node
+  artifacts/api-server/dist/index.mjs — runs the database migrations before
+  the server boots (see Step 4).
 - Health check: /api/healthz
 
 You shouldn't need to change these in the Railway dashboard, but they're
@@ -89,18 +91,22 @@ NODE_ENV isn't required by the app, but should be set to `production` in
 any real deployment — it controls log formatting and gates the local
 demo-data seed script.
 
-## Step 4 — Deploy and run migrations
+## Step 4 — Deploy
 
 1. Trigger a deploy (pushing to your connected branch does this
    automatically).
-2. Once it's live, apply the database migrations using Railway's CLI or the
-   service's one-off command runner:
-   railway run pnpm --filter @workspace/db run migrate
-   This runs the versioned SQL migration files in lib/db/migrations against
-   the connected database, recording which ones have already been applied.
-   Unlike `drizzle-kit push`, it never diffs against or drops live schema, so
-   it's the command to use here — this database holds client CIS and invoice
-   records.
+2. Migrations run automatically as part of the start command, before the
+   server begins accepting traffic — you don't need to run them by hand.
+   The start command (`pnpm --filter @workspace/db run migrate && node
+   artifacts/api-server/dist/index.mjs`) applies the versioned SQL migration
+   files in lib/db/migrations against the connected database, recording
+   which ones have already been applied, every time the container starts or
+   restarts. Unlike `drizzle-kit push`, it never diffs against or drops live
+   schema, and re-running it against an already-migrated database is a
+   no-op, so it's safe to run on every boot — this database holds client CIS
+   and invoice records. If a migration fails, the `&&` short-circuits and
+   the server process never starts, so Railway's health check fails and the
+   deploy is rejected instead of running against a half-migrated schema.
 
 ## Step 5 — First login and admin user
 
