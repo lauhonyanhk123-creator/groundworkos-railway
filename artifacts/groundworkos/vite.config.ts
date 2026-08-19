@@ -4,6 +4,15 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 
 export default defineConfig(({ command, isPreview }) => {
+  if (command === "build" && !process.env.VITE_CLERK_PUBLISHABLE_KEY) {
+    throw new Error(
+      "VITE_CLERK_PUBLISHABLE_KEY is required to build the frontend but was not provided. " +
+        "Vite inlines this value at build time, so a build without it produces a bundle that " +
+        "throws at startup and renders a blank page. Set VITE_CLERK_PUBLISHABLE_KEY in Railway's " +
+        "service variables before deploying.",
+    );
+  }
+
   const needsPort = command === "serve" || isPreview;
 
   let port: number | undefined;
