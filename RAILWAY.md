@@ -31,8 +31,10 @@ VPS.
 The included railway.json already tells Railway how to build and run the
 app:
 
-- Build: pnpm install --frozen-lockfile && pnpm run build (builds every
-  workspace package, including both the API server and the frontend).
+- Build: pnpm install --frozen-lockfile --prod=false && pnpm run build
+  (builds every workspace package, including both the API server and the
+  frontend). --prod=false keeps devDependencies installed even if NODE_ENV
+  is production, since the build tooling lives there.
 - Start: pnpm --filter @workspace/db run migrate && node
   artifacts/api-server/dist/index.mjs — runs the database migrations before
   the server boots (see Step 4).
@@ -87,9 +89,12 @@ not need to set it yourself — but note the app will refuse to boot if PORT
 is ever unset (there's no built-in default), which matters if you're
 running it outside Railway's usual build/deploy flow.
 
-NODE_ENV isn't required by the app, but should be set to `production` in
-any real deployment — it controls log formatting and gates the local
-demo-data seed script.
+Do NOT add NODE_ENV here. Railway sets NODE_ENV=production automatically at
+runtime, and adding it as a build-time variable makes pnpm skip
+devDependencies — where typescript, vite, esbuild and drizzle-kit live — so
+the build fails with missing-dependency type errors. (NODE_ENV still does
+its usual job at runtime: it controls log formatting and gates the local
+demo-data seed script; you only set it by hand when self-hosting.)
 
 ## Step 4 — Deploy
 
