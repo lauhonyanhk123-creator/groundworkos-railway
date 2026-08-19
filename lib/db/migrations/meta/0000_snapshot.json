@@ -190,9 +190,7 @@
         "jobs_job_number_unique": {
           "name": "jobs_job_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "job_number"
-          ]
+          "columns": ["job_number"]
         }
       },
       "policies": {},
@@ -371,16 +369,12 @@
         "quotes_quote_number_unique": {
           "name": "quotes_quote_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "quote_number"
-          ]
+          "columns": ["quote_number"]
         },
         "quotes_share_token_unique": {
           "name": "quotes_share_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "share_token"
-          ]
+          "columns": ["share_token"]
         }
       },
       "policies": {},
@@ -500,9 +494,7 @@
         "invoices_invoice_number_unique": {
           "name": "invoices_invoice_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "invoice_number"
-          ]
+          "columns": ["invoice_number"]
         }
       },
       "policies": {},
@@ -1827,9 +1819,7 @@
         "purchase_orders_po_number_unique": {
           "name": "purchase_orders_po_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "po_number"
-          ]
+          "columns": ["po_number"]
         }
       },
       "policies": {},

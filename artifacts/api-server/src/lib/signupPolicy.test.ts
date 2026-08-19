@@ -28,15 +28,11 @@ describe("emailDomainAllowed", () => {
   });
 
   it("is case-insensitive on the domain", () => {
-    expect(
-      emailDomainAllowed("alice@Example.COM", ["example.com"]),
-    ).toBe(true);
+    expect(emailDomainAllowed("alice@Example.COM", ["example.com"])).toBe(true);
   });
 
   it("rejects an email whose domain is not on the allowlist", () => {
-    expect(emailDomainAllowed("mallory@evil.com", ["example.com"])).toBe(
-      false,
-    );
+    expect(emailDomainAllowed("mallory@evil.com", ["example.com"])).toBe(false);
   });
 
   it("rejects a malformed email with no domain", () => {

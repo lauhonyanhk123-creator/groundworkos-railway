@@ -111,7 +111,9 @@ router.get("/admin/invitations", async (req, res) => {
     const invitations = response.data.map((inv) => ({
       id: inv.id,
       email: inv.emailAddress,
-      role: resolveRole((inv.publicMetadata as Record<string, unknown> | null)?.role),
+      role: resolveRole(
+        (inv.publicMetadata as Record<string, unknown> | null)?.role,
+      ),
       createdAt: new Date(inv.createdAt).toISOString(),
     }));
     res.json(invitations);
@@ -126,9 +128,7 @@ router.post("/admin/invitations", async (req, res) => {
   if (!(await requireAdmin(req, res))) return;
   const { email, role } = req.body;
   if (typeof email !== "string" || !email.includes("@")) {
-    return res
-      .status(400)
-      .json({ error: "A valid email address is required" });
+    return res.status(400).json({ error: "A valid email address is required" });
   }
   if (!isRole(role)) {
     return res.status(400).json({ error: "Invalid role" });

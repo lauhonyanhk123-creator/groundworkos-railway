@@ -17,9 +17,7 @@ const SAMPLE_LIVE_ORIGIN = "https://clerk.example.com";
 
 describe("decodeClerkFrontendApiHost", () => {
   it("decodes the frontend API host from a test publishable key", () => {
-    expect(decodeClerkFrontendApiHost(SAMPLE_TEST_KEY)).toBe(
-      SAMPLE_TEST_HOST,
-    );
+    expect(decodeClerkFrontendApiHost(SAMPLE_TEST_KEY)).toBe(SAMPLE_TEST_HOST);
   });
 
   it("decodes the frontend API host from a live publishable key", () => {

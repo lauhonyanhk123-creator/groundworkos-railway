@@ -185,8 +185,8 @@ function SignUpPage() {
           lineHeight: 1.6,
         }}
       >
-        GroundworkOS is invite-only. If you've received an invitation email,
-        use the same email address below to finish setting up your account.
+        GroundworkOS is invite-only. If you've received an invitation email, use
+        the same email address below to finish setting up your account.
         Otherwise, ask your admin to invite you from Settings &rarr; Users.
       </p>
       <SignUp

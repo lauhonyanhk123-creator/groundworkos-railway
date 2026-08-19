@@ -115,7 +115,9 @@ export function createAccountingOAuthRouter<TConn extends ConnectionBase>(
       res.redirect(`/settings?${provider}=connected`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      res.redirect(`/settings?${provider}=error&msg=${encodeURIComponent(msg)}`);
+      res.redirect(
+        `/settings?${provider}=error&msg=${encodeURIComponent(msg)}`,
+      );
     }
   });
 
