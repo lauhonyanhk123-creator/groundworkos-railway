@@ -38,7 +38,11 @@ app:
 - Start: pnpm --filter @workspace/db run migrate && node
   artifacts/api-server/dist/index.mjs — runs the database migrations before
   the server boots (see Step 4).
-- Health check: /api/healthz
+- Health check: /api/readyz — the readiness probe, which reports "ok" only
+  once the app can reach the database. It gates the deploy on /api/readyz
+  rather than the /api/healthz liveness probe so a deploy against an
+  unreachable or unmigrated database fails the health check instead of
+  passing on a static "ok".
 
 You shouldn't need to change these in the Railway dashboard, but they're
 visible under the service's Settings tab if you want to confirm.
