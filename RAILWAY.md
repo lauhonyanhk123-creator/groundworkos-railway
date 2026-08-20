@@ -31,10 +31,21 @@ VPS.
 The included railway.json already tells Railway how to build and run the
 app:
 
-- Build: pnpm install --frozen-lockfile --prod=false && pnpm run build
-  (builds every workspace package, including both the API server and the
-  frontend). --prod=false keeps devDependencies installed even if NODE_ENV
-  is production, since the build tooling lives there.
+- Build: pnpm install --frozen-lockfile --prod=false
+  --config.confirm-modules-purge=false, then a check that devDependencies
+  really are installed, then pnpm run build (which builds every workspace
+  package, including both the API server and the frontend). --prod=false
+  keeps devDependencies installed even if NODE_ENV is production, since the
+  build tooling lives there. --config.confirm-modules-purge=false is needed
+  alongside it: if an earlier install already pruned devDependencies, the
+  --prod=false install has to wipe and recreate node_modules, and pnpm 9
+  pauses on an interactive "The modules directories will be removed and
+  reinstalled from scratch. Proceed?" confirmation. With no terminal to
+  answer it on, pnpm exits 0 without reinstalling anything, so the && does
+  not short-circuit and the build runs on. The check in between is the
+  backstop: if devDependencies are missing after the install for any
+  reason, the build stops there with a clear message instead of failing
+  later at typecheck with misleading "Cannot find module 'react'" errors.
 - Start: pnpm --filter @workspace/db run migrate && node
   artifacts/api-server/dist/index.mjs — runs the database migrations before
   the server boots (see Step 4).
@@ -95,10 +106,13 @@ running it outside Railway's usual build/deploy flow.
 
 Do NOT add NODE_ENV here. Railway sets NODE_ENV=production automatically at
 runtime, and adding it as a build-time variable makes pnpm skip
-devDependencies — where typescript, vite, esbuild and drizzle-kit live — so
-the build fails with missing-dependency type errors. (NODE_ENV still does
-its usual job at runtime: it controls log formatting and gates the local
-demo-data seed script; you only set it by hand when self-hosting.)
+devDependencies — where typescript, vite, esbuild and drizzle-kit live. The
+build command is written to recover from that (see Step 2), and to fail
+loudly with "Build aborted: devDependencies are missing after install" if
+it cannot, but the supported setup is simply not to set NODE_ENV here.
+(NODE_ENV still does its usual job at runtime: it controls log formatting
+and gates the local demo-data seed script; you only set it by hand when
+self-hosting.)
 
 ## Step 4 — Deploy
 
