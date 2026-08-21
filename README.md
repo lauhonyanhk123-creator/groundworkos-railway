@@ -30,8 +30,8 @@ Manage jobs, CIS compliance, quotes, invoices, plant, subcontractors, timesheets
 - **Plant** — fleet management with MOT, service and LOLER exam tracking
 - **Timesheets** — daily time logging per job and worker
 - **Purchase Orders** — supplier PO management with PDF export
-- **Reports** — revenue overview, job P&L, CIS300 submission export, rate book
-- **CIS300 Export** — HMRC-formatted CSV per tax month, ready for submission
+- **Reports** — revenue overview, job P&L, CIS300 export, rate book
+- **CIS300 Export** — CSV per tax month formatted for manual HMRC filing (note: the UTR column is not currently populated — see Known Issues)
 - **Audit Trail** — every create/update/delete recorded with full change history
 - **Client Portal** — shareable quote approval links for clients
 - **Accounting Integrations** — sync contacts, invoices and quotes, and pull payment status, with Xero, QuickBooks Online, Sage Accounting, or FreeAgent (self-service OAuth — the client connects with their own accounting login, no API keys required)
@@ -150,7 +150,9 @@ Both the frontend dev server and the API server require `PORT` to be set (there'
 │   ├── api-client-react/    # Typed API client (shared)
 │   ├── api-spec/            # OpenAPI spec + codegen (orval)
 │   ├── api-zod/             # Shared Zod schemas/types
+│   ├── shared-role/         # Shared role types/logic (frontend + backend)
 │   └── object-storage-web/  # File upload utilities
+├── scripts/                 # Standalone scripts (workspace package)
 └── pnpm-workspace.yaml
 ```
 
@@ -200,8 +202,14 @@ GroundworkOS is built around UK Construction Industry Scheme requirements:
 
 - Subcontractor CIS status tracking (Gross / Net / Unmatched / Unverified)
 - Automatic CIS deduction calculation on invoices
-- Monthly CIS300 return export (HMRC-formatted CSV)
+- Monthly CIS300 return export (CSV formatted for manual filing with HMRC — not an automated/API submission)
 - Expiry tracking for CSCS cards, NRSWA certifications, public liability insurance
+
+---
+
+## Known Issues
+
+- **CIS300 export is missing UTR** — the CIS300 CSV export (`exportCIS300` in `ReportsPage.tsx`) always writes an empty "UTR Number" column. The `CISReturn` type has no `utr` field and it isn't loaded by `DataLoader.tsx`, so this needs a data-model change (not just an export-function fix) before the exported CSV is complete enough for filing as-is.
 
 ---
 
@@ -209,7 +217,7 @@ GroundworkOS is built around UK Construction Industry Scheme requirements:
 
 A few non-obvious design decisions and gotchas worth knowing before making changes:
 
-**Roles & access control** — Roles live in Clerk `publicMetadata.role` and are read independently on the frontend (`hooks/useRole.ts`) and backend (`lib/auth.ts`, `admin.ts`); any change to role logic must be applied in all places at once, since a mismatch between frontend and backend checks has been a real bug source. A user with no role set defaults to admin — a deliberate choice for a trusted, single-company deployment, not an oversight. Any endpoint gated to admin (e.g. the audit trail) must have every consumer of that endpoint gated too, not just the page that owns it — the dashboard's "Recent Activity" panel reads the same audit endpoint as the full Audit Log page.
+**Roles & access control** — Roles live in Clerk `publicMetadata.role` and are read independently on the frontend (`hooks/useRole.ts`) and backend (`lib/auth.ts`, `admin.ts`); any change to role logic must be applied in all places at once, since a mismatch between frontend and backend checks has been a real bug source. A user with no role set defaults to `foreman` (the lowest-privilege role) — the very first admin is instead created via the one-time bootstrap flow (`POST /api/admin/bootstrap`, see the User Roles section above), a deliberate choice so a stranger reaching a public sign-up page never lands with elevated access. Any endpoint gated to admin (e.g. the audit trail) must have every consumer of that endpoint gated too, not just the page that owns it — the dashboard's "Recent Activity" panel reads the same audit endpoint as the full Audit Log page.
 
 **API data shape** — The database and API layer use camelCase (Drizzle convention), while the frontend's `types.ts` uses snake_case throughout. The bridge between them lives in `artifacts/groundworkos/src/lib/apiTransforms.ts`, called from `artifacts/groundworkos/src/store/DataLoader.tsx`. Any new field added to the schema needs a matching entry in the transform layer or it won't reach the frontend.
 
