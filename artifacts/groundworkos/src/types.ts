@@ -253,6 +253,7 @@ export interface CISReturn {
   tax_month: string;
   subcontractor_id: string;
   subcontractor_name: string;
+  utr: string | null;
   gross_payment: number;
   deduction_rate: number;
   deduction_amount: number;

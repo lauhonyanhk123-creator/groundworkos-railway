@@ -352,7 +352,7 @@ export function ReportsPage() {
       returns.map((r) => [
         r.tax_month,
         r.subcontractor_name,
-        "",
+        r.utr ?? "",
         r.gross_payment.toFixed(2),
         r.deduction_amount.toFixed(2),
         r.net_payment.toFixed(2),
