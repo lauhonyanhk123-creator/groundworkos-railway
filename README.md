@@ -31,7 +31,7 @@ Manage jobs, CIS compliance, quotes, invoices, plant, subcontractors, timesheets
 - **Timesheets** — daily time logging per job and worker
 - **Purchase Orders** — supplier PO management with PDF export
 - **Reports** — revenue overview, job P&L, CIS300 export, rate book
-- **CIS300 Export** — CSV per tax month formatted for manual HMRC filing (note: the UTR column is not currently populated — see Known Issues)
+- **CIS300 Export** — CSV per tax month (including subcontractor UTR) formatted for manual HMRC filing
 - **Audit Trail** — every create/update/delete recorded with full change history
 - **Client Portal** — shareable quote approval links for clients
 - **Accounting Integrations** — sync contacts, invoices and quotes, and pull payment status, with Xero, QuickBooks Online, Sage Accounting, or FreeAgent (self-service OAuth — the client connects with their own accounting login, no API keys required)
@@ -204,12 +204,6 @@ GroundworkOS is built around UK Construction Industry Scheme requirements:
 - Automatic CIS deduction calculation on invoices
 - Monthly CIS300 return export (CSV formatted for manual filing with HMRC — not an automated/API submission)
 - Expiry tracking for CSCS cards, NRSWA certifications, public liability insurance
-
----
-
-## Known Issues
-
-- **CIS300 export is missing UTR** — the CIS300 CSV export (`exportCIS300` in `ReportsPage.tsx`) always writes an empty "UTR Number" column. The `CISReturn` type has no `utr` field and it isn't loaded by `DataLoader.tsx`, so this needs a data-model change (not just an export-function fix) before the exported CSV is complete enough for filing as-is.
 
 ---
 
