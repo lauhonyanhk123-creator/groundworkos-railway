@@ -55,6 +55,7 @@ function mapCisReturn(row: Record<string, unknown>, idx: number): CISReturn {
     tax_month: taxMonth,
     subcontractor_id: "",
     subcontractor_name: (row.company_name as string) ?? "—",
+    utr: (row.utr_number as string | null) ?? null,
     gross_payment: Number(row.gross_payment ?? 0),
     deduction_rate: Number(row.cis_deduction_rate ?? 0),
     deduction_amount: Number(row.cis_deducted ?? 0),
