@@ -73,7 +73,16 @@ other social/OAuth sign-in provider is configured:
 
 - CLERK*PUBLISHABLE_KEY=pk_live*...
 - CLERK*SECRET_KEY=sk_live*...
-- VITE*CLERK_PUBLISHABLE_KEY=pk_live*... (same key, needed at build time)
+- VITE*CLERK_PUBLISHABLE_KEY=pk_live*... (MUST be the exact same value as
+  CLERK_PUBLISHABLE_KEY above — one is read by the frontend build, the other
+  by the API server at runtime, and nothing else keeps them in sync. If they
+  ever diverge (e.g. one gets updated to a new live key and the other
+  doesn't), the frontend and the server's Content-Security-Policy disagree
+  on which Clerk instance to talk to, and the app renders a blank page with
+  only a browser-console error to explain why. The server checks this for
+  you at boot — see "Detecting a Clerk key mismatch" below — but it can only
+  catch the mismatch, not prevent it, so double-check both values are
+  identical before you deploy.)
 
 App settings:
 
@@ -112,6 +121,19 @@ devDependencies — where typescript, vite, esbuild and drizzle-kit live — so
 the build fails with missing-dependency type errors. (NODE_ENV still does
 its usual job at runtime: it controls log formatting and gates the local
 demo-data seed script; you only set it by hand when self-hosting.)
+
+### Detecting a Clerk key mismatch
+
+CLERK_PUBLISHABLE_KEY and VITE_CLERK_PUBLISHABLE_KEY must be the identical
+value (see above). To catch the case where they drift apart, the frontend
+build writes the VITE_CLERK_PUBLISHABLE_KEY it was built with into
+`clerk-manifest.json` alongside the built assets, and the API server compares
+that against its own CLERK_PUBLISHABLE_KEY at boot. If they disagree, the
+server logs a clear error naming both values and refuses to start, instead of
+booting successfully into a blank-page frontend with nothing logged. A
+missing manifest (frontend not yet built, or an API-only run) is not treated
+as an error — it's only checked when both a build and a runtime key are
+present to compare.
 
 ## Step 4 — Deploy
 

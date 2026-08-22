@@ -1,11 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
-const { errorMock } = vi.hoisted(() => ({ errorMock: vi.fn() }));
+const { errorMock, warnMock } = vi.hoisted(() => ({
+  errorMock: vi.fn(),
+  warnMock: vi.fn(),
+}));
 
 // validateEnv.ts imports the real pino logger, which spins up a
 // pino-pretty transport worker outside NODE_ENV=production. Mock it out so
 // tests just observe which error messages would have been logged.
-vi.mock("./logger", () => ({ logger: { error: errorMock } }));
+vi.mock("./logger", () => ({
+  logger: { error: errorMock, warn: warnMock },
+}));
 
 const BASE_ENV = {
   PORT: "3000",
@@ -34,6 +42,7 @@ let exitSpy: ReturnType<typeof vi.spyOn>;
 beforeEach(() => {
   vi.resetModules();
   errorMock.mockClear();
+  warnMock.mockClear();
   exitSpy = vi
     .spyOn(process, "exit")
     .mockImplementation(() => undefined as never);
@@ -46,7 +55,7 @@ afterEach(() => {
 
 async function loadValidateEnv(overrides: Record<string, string | undefined>) {
   process.env = { ...originalEnv, ...BASE_ENV, ...overrides };
-  await import("./validateEnv");
+  return import("./validateEnv");
 }
 
 describe("validateEnv - CLERK_PUBLISHABLE_KEY", () => {
@@ -278,5 +287,222 @@ describe("validateEnv - SIGNUP_ALLOWED_EMAIL_DOMAINS / CLERK_WEBHOOK_SIGNING_SEC
 
     expect(errorMock).not.toHaveBeenCalled();
     expect(exitSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("validateEnv - CLERK_PUBLISHABLE_KEY / VITE_CLERK_PUBLISHABLE_KEY manifest consistency", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "clerk-manifest-test-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeManifest(content: unknown) {
+    fs.writeFileSync(
+      path.join(tmpDir, "clerk-manifest.json"),
+      typeof content === "string" ? content : JSON.stringify(content),
+    );
+  }
+
+  it("passes and warns when no manifest file exists (e.g. local dev, API-only run)", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      STATIC_DIR: tmpDir,
+    });
+
+    expect(errorMock).not.toHaveBeenCalled();
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(warnMock).toHaveBeenCalledWith(
+      expect.stringContaining("clerk-manifest.json"),
+    );
+  });
+
+  it("passes silently when the manifest's publishable key matches CLERK_PUBLISHABLE_KEY", async () => {
+    writeManifest({ publishableKey: VALID_PUBLISHABLE_KEY });
+
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      STATIC_DIR: tmpDir,
+    });
+
+    expect(errorMock).not.toHaveBeenCalled();
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(warnMock).not.toHaveBeenCalled();
+  });
+
+  it("fails loudly when the manifest's publishable key differs from CLERK_PUBLISHABLE_KEY (test vs live)", async () => {
+    writeManifest({ publishableKey: VALID_LIVE_PUBLISHABLE_KEY });
+
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      STATIC_DIR: tmpDir,
+    });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "CLERK_PUBLISHABLE_KEY does not match the VITE_CLERK_PUBLISHABLE_KEY",
+      ),
+    );
+  });
+
+  it("fails loudly when the manifest's publishable key differs from CLERK_PUBLISHABLE_KEY (different hosts)", async () => {
+    // pk_test_<base64("other-app.clerk.accounts.dev$")>
+    const DIFFERENT_HOST_KEY =
+      "pk_test_b3RoZXItYXBwLmNsZXJrLmFjY291bnRzLmRldiQ=";
+    writeManifest({ publishableKey: DIFFERENT_HOST_KEY });
+
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      STATIC_DIR: tmpDir,
+    });
+
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "CLERK_PUBLISHABLE_KEY does not match the VITE_CLERK_PUBLISHABLE_KEY",
+      ),
+    );
+  });
+
+  it("warns but does not fail when the manifest file is malformed JSON", async () => {
+    writeManifest("not json{{{");
+
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      STATIC_DIR: tmpDir,
+    });
+
+    expect(errorMock).not.toHaveBeenCalled();
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(warnMock).toHaveBeenCalled();
+  });
+
+  it("warns but does not fail when the manifest is missing the publishableKey field", async () => {
+    writeManifest({ somethingElse: true });
+
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      STATIC_DIR: tmpDir,
+    });
+
+    expect(errorMock).not.toHaveBeenCalled();
+    expect(exitSpy).not.toHaveBeenCalled();
+    expect(warnMock).toHaveBeenCalled();
+  });
+
+  it("skips the check entirely when STATIC_DIR itself is absent", async () => {
+    await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+      STATIC_DIR: undefined,
+    });
+
+    // STATIC_DIR missing is still its own required-var failure, but the
+    // manifest check itself must not also throw or add a second error.
+    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(errorMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("VITE_CLERK_PUBLISHABLE_KEY"),
+    );
+  });
+});
+
+describe("readClerkManifest / checkClerkPublishableKeysMatch (unit)", () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "clerk-manifest-unit-"));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("readClerkManifest reports absent for a missing file", async () => {
+    const mod = await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+    });
+
+    expect(mod.readClerkManifest(tmpDir)).toEqual({ status: "absent" });
+  });
+
+  it("readClerkManifest reports ok with the key for a well-formed manifest", async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, "clerk-manifest.json"),
+      JSON.stringify({ publishableKey: VALID_PUBLISHABLE_KEY }),
+    );
+
+    const mod = await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+    });
+
+    expect(mod.readClerkManifest(tmpDir)).toEqual({
+      status: "ok",
+      publishableKey: VALID_PUBLISHABLE_KEY,
+    });
+  });
+
+  it("readClerkManifest reports invalid for malformed JSON", async () => {
+    fs.writeFileSync(path.join(tmpDir, "clerk-manifest.json"), "{not json");
+
+    const mod = await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+    });
+
+    expect(mod.readClerkManifest(tmpDir)).toEqual({ status: "invalid" });
+  });
+
+  it("readClerkManifest reports invalid when publishableKey is missing or not a string", async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, "clerk-manifest.json"),
+      JSON.stringify({ publishableKey: 123 }),
+    );
+
+    const mod = await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+    });
+
+    expect(mod.readClerkManifest(tmpDir)).toEqual({ status: "invalid" });
+  });
+
+  it("checkClerkPublishableKeysMatch returns null when staticDir is undefined", async () => {
+    const mod = await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+    });
+
+    expect(
+      mod.checkClerkPublishableKeysMatch(undefined, VALID_PUBLISHABLE_KEY),
+    ).toBeNull();
+  });
+
+  it("checkClerkPublishableKeysMatch returns an error string on mismatch", async () => {
+    fs.writeFileSync(
+      path.join(tmpDir, "clerk-manifest.json"),
+      JSON.stringify({ publishableKey: VALID_LIVE_PUBLISHABLE_KEY }),
+    );
+
+    const mod = await loadValidateEnv({
+      CLERK_PUBLISHABLE_KEY: VALID_PUBLISHABLE_KEY,
+      CLERK_SECRET_KEY: VALID_SECRET_KEY,
+    });
+
+    expect(
+      mod.checkClerkPublishableKeysMatch(tmpDir, VALID_PUBLISHABLE_KEY),
+    ).toEqual(expect.stringContaining("does not match"));
   });
 });

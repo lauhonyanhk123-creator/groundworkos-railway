@@ -1,3 +1,5 @@
+import fs from "fs";
+import path from "path";
 import { logger } from "./logger";
 import { parseAllowedDomains } from "./signupPolicy";
 
@@ -79,6 +81,108 @@ export function isValidSecretKey(value: string): boolean {
   return SECRET_KEY_RE.test(value);
 }
 
+const CLERK_MANIFEST_FILENAME = "clerk-manifest.json";
+
+export type ClerkManifestResult =
+  | { status: "absent" }
+  | { status: "invalid" }
+  | { status: "ok"; publishableKey: string };
+
+/**
+ * Reads the manifest the frontend build writes next to its output
+ * (artifacts/groundworkos/vite.config.ts), recording the
+ * VITE_CLERK_PUBLISHABLE_KEY that build was actually given. "Absent" is
+ * expected, not an error: local dev and API-only runs never build the
+ * frontend, so STATIC_DIR may point at a directory with no manifest at all.
+ */
+export function readClerkManifest(staticDir: string): ClerkManifestResult {
+  const manifestPath = path.join(
+    path.resolve(staticDir),
+    CLERK_MANIFEST_FILENAME,
+  );
+
+  let raw: string;
+  try {
+    raw = fs.readFileSync(manifestPath, "utf-8");
+  } catch {
+    return { status: "absent" };
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    const key = (parsed as { publishableKey?: unknown } | null)?.publishableKey;
+    if (typeof key === "string" && key.length > 0) {
+      return { status: "ok", publishableKey: key };
+    }
+    return { status: "invalid" };
+  } catch {
+    return { status: "invalid" };
+  }
+}
+
+function maskPublishableKey(key: string): string {
+  return key.length <= 12 ? key : `${key.slice(0, 12)}…`;
+}
+
+/**
+ * The frontend (VITE_CLERK_PUBLISHABLE_KEY, inlined at build time) and this
+ * server (CLERK_PUBLISHABLE_KEY, read at runtime) each get the Clerk
+ * publishable key from a different env var, and nothing else compares them.
+ * If an operator sets a pk_test in one and a pk_live in the other, this
+ * server's CSP (see csp.ts) ends up allow-listing a different Clerk
+ * Frontend API origin than the one the bundle actually loads its SDK from,
+ * so the browser blocks that script and the app renders a blank page with
+ * nothing logged here. Comparing the two at boot turns that into a loud,
+ * immediate failure instead.
+ *
+ * Returns an error message when the keys disagree, or null when they match
+ * or the check can't be performed (no STATIC_DIR, no manifest, no server
+ * key to compare against) - those cases are logged as warnings by the
+ * caller, not treated as failures.
+ */
+export function checkClerkPublishableKeysMatch(
+  staticDir: string | undefined,
+  serverPublishableKey: string | undefined,
+): string | null {
+  if (!staticDir) return null;
+
+  const manifest = readClerkManifest(staticDir);
+
+  if (manifest.status === "absent") {
+    logger.warn(
+      `No ${CLERK_MANIFEST_FILENAME} found under STATIC_DIR ("${staticDir}") - skipping the ` +
+        "CLERK_PUBLISHABLE_KEY / VITE_CLERK_PUBLISHABLE_KEY consistency check. Expected if the " +
+        "frontend hasn't been built yet, or this is an API-only run.",
+    );
+    return null;
+  }
+
+  if (manifest.status === "invalid") {
+    logger.warn(
+      `Could not read ${CLERK_MANIFEST_FILENAME} under STATIC_DIR ("${staticDir}") - skipping the ` +
+        "CLERK_PUBLISHABLE_KEY / VITE_CLERK_PUBLISHABLE_KEY consistency check.",
+    );
+    return null;
+  }
+
+  if (
+    !serverPublishableKey ||
+    manifest.publishableKey === serverPublishableKey
+  ) {
+    return null;
+  }
+
+  return (
+    "CLERK_PUBLISHABLE_KEY does not match the VITE_CLERK_PUBLISHABLE_KEY the frontend was built " +
+    `with (server: "${maskPublishableKey(serverPublishableKey)}", frontend build: ` +
+    `"${maskPublishableKey(manifest.publishableKey)}"). These must be the exact same Clerk ` +
+    "publishable key - the server derives its Content-Security-Policy from CLERK_PUBLISHABLE_KEY, " +
+    "and a mismatch makes the browser block the Clerk script the frontend bundle actually loads, " +
+    "with nothing logged server-side to explain the resulting blank page. Set both variables to " +
+    "the identical value and rebuild the frontend."
+  );
+}
+
 const errors: string[] = [];
 
 for (const name of REQUIRED_ENV_VARS) {
@@ -95,6 +199,14 @@ if (publishableKey && !isValidPublishableKey(publishableKey)) {
   errors.push(
     'Invalid CLERK_PUBLISHABLE_KEY: expected "pk_test_" or "pk_live_" followed by base64 that decodes to a hostname ending in "$" (e.g. pk_test_<base64("your-app.clerk.accounts.dev$")>)',
   );
+}
+
+const clerkKeyMismatch = checkClerkPublishableKeysMatch(
+  process.env.STATIC_DIR,
+  publishableKey,
+);
+if (clerkKeyMismatch) {
+  errors.push(clerkKeyMismatch);
 }
 
 const secretKey = process.env.CLERK_SECRET_KEY;
