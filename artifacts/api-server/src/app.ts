@@ -140,12 +140,12 @@ app.use(
 app.use("/api", defaultApiLimiter, router);
 
 /**
- * Optional single-service static hosting - set STATIC_DIR to the built
- * frontend's output directory (e.g. artifacts/groundworkos/dist/public) to
- * have this server serve the SPA itself, alongside the API. This is what
- * makes a single-service deploy (e.g. on Railway) possible without a
- * separate reverse proxy.
- * Leave STATIC_DIR unset to keep previous behavior (API only) unchanged.
+ * Single-service static hosting - STATIC_DIR points at the built frontend's
+ * output directory (e.g. artifacts/groundworkos/dist/public) so this server
+ * serves the SPA itself, alongside the API. This is what makes a
+ * single-service deploy (e.g. on Railway) possible without a separate
+ * reverse proxy. STATIC_DIR is a required env var (see validateEnv.ts) and
+ * the process refuses to boot without it, so this block always runs.
  */
 const staticDir = process.env.STATIC_DIR;
 
