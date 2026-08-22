@@ -47,6 +47,19 @@ app:
 You shouldn't need to change these in the Railway dashboard, but they're
 visible under the service's Settings tab if you want to confirm.
 
+**Node version pin:** Railway's build uses Nixpacks, which only honours a
+bare major version in `engines.node` (e.g. `"22"`, not a range like
+`">=20.0.0"`) and otherwise silently falls back to an older default Node
+version. This repo pins Node 22 in two places Nixpacks reads directly — the
+root `.nvmrc` (`22`) and `engines.node` (`"22"`) in the root `package.json`
+— so the build, CI, and local dev all resolve to the same runtime. Node 22
+is required because Vite 7 (used by `artifacts/groundworkos`) needs Node
+`^20.19.0 || >=22.12.0`; running it on an older Node only prints a Vite
+warning rather than failing outright, so a stale Nixpacks-resolved Node
+version otherwise shows up as a confusing downstream build failure instead
+of a clear version error. If you ever need to bump the Node version, update
+both files together.
+
 ## Step 3 — Set environment variables
 
 Open the app service's Variables tab and add:
