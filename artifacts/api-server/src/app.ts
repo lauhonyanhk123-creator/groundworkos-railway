@@ -6,12 +6,18 @@ import express, {
 import path from "path";
 import cors from "cors";
 import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { buildCspDirectives } from "./lib/csp";
+import {
+  HEALTH_CHECK_PATHS,
+  PUBLIC_ROUTE_PATHS,
+  createDefaultApiLimiter,
+  createHealthCheckLimiter,
+  createPublicRouteLimiter,
+} from "./lib/rateLimits";
 
 const app: Express = express();
 
@@ -104,40 +110,17 @@ app.use(
 );
 
 /**
- * Rate limiting. A generous default limit applies across the whole API;
- * the unauthenticated public routes (health check + OAuth provider
- * callbacks) get a much tighter limit since they can be hit by anyone
- * without any auth at all.
+ * Rate limiting. See lib/rateLimits.ts for the limiters and the reasoning
+ * behind each budget. In short: a generous default across the API, a much
+ * tighter limit on the unauthenticated OAuth callbacks and Clerk webhook,
+ * and a deliberately high limit on the health/readiness probes so that
+ * deploy healthchecks and uptime monitors can never rate-limit themselves
+ * into a failed deploy.
  */
-const defaultApiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 300,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+app.use([...HEALTH_CHECK_PATHS], createHealthCheckLimiter());
+app.use([...PUBLIC_ROUTE_PATHS], createPublicRouteLimiter());
 
-const publicRouteLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 30,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many requests, please try again later." },
-});
-
-app.use(
-  [
-    "/api/healthz",
-    "/api/readyz",
-    "/api/xero/callback",
-    "/api/quickbooks/callback",
-    "/api/sage/callback",
-    "/api/freeagent/callback",
-    "/api/webhooks/clerk",
-  ],
-  publicRouteLimiter,
-);
-
-app.use("/api", defaultApiLimiter, router);
+app.use("/api", createDefaultApiLimiter(), router);
 
 /**
  * Single-service static hosting - STATIC_DIR points at the built frontend's
